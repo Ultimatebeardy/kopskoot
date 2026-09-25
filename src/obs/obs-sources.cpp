@@ -75,6 +75,22 @@ std::vector<SourceInfo> listVideoSources()
 	return out;
 }
 
+std::vector<std::string> listTextSourceNames()
+{
+	std::vector<std::string> out;
+	obs_enum_sources(
+		[](void *param, obs_source_t *source) {
+			const char *id = obs_source_get_unversioned_id(source);
+			const char *name = obs_source_get_name(source);
+			if (id && name && std::string(id).rfind("text_", 0) == 0)
+				static_cast<std::vector<std::string> *>(param)->push_back(name);
+			return true;
+		},
+		&out);
+	std::sort(out.begin(), out.end(), [](const std::string &a, const std::string &b) { return lower(a) < lower(b); });
+	return out;
+}
+
 SourcePtr findSource(const std::string &uuid, const std::string &name)
 {
 	if (!uuid.empty()) {

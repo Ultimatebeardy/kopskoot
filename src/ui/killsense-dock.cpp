@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "killsense-dock.hpp"
 
+#include "capture-dialog.hpp"
 #include "debug-view.hpp"
 #include "profile-manager-dialog.hpp"
 #include "settings-dialog.hpp"
@@ -73,6 +74,27 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	profileLayout->addLayout(profileRow);
 	root->addWidget(profileBox);
 
+	// --- Player (whose kills count) ---
+	auto *playerBox = new QGroupBox(T("KillSense.Player"), content);
+	auto *playerLayout = new QVBoxLayout(playerBox);
+	gamertag_ = new QLabel(playerBox);
+	gamertag_->setWordWrap(true);
+	setupHint_ = new QLabel(playerBox);
+	setupHint_->setWordWrap(true);
+	setupHint_->setStyleSheet(QStringLiteral("color:#ffb74d;"));
+	auto *playerRow = new QHBoxLayout();
+	auto *setGamertag = new QPushButton(T("KillSense.Player.SetGamertag"), playerBox);
+	capture_ = new QPushButton(T("KillSense.Player.Capture"), playerBox);
+	capture_->setToolTip(T("KillSense.Player.Capture.Tooltip"));
+	playerRow->addWidget(setGamertag);
+	playerRow->addWidget(capture_);
+	playerLayout->addWidget(gamertag_);
+	playerLayout->addWidget(setupHint_);
+	playerLayout->addLayout(playerRow);
+	root->addWidget(playerBox);
+	connect(setGamertag, &QPushButton::clicked, this, &KillSenseDock::onSettings);
+	connect(capture_, &QPushButton::clicked, this, &KillSenseDock::onCaptureNamePlate);
+
 	// --- Main controls ---
 	auto *controls = new QHBoxLayout();
 	startStop_ = new QPushButton(T("KillSense.Start"), content);
@@ -92,6 +114,8 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	state_ = valueLabel(statusBox);
 	kills_ = valueLabel(statusBox);
 	streak_ = valueLabel(statusBox);
+	deaths_ = valueLabel(statusBox);
+	kd_ = valueLabel(statusBox);
 	lastEvent_ = valueLabel(statusBox);
 	lastConfidence_ = valueLabel(statusBox);
 	fps_ = valueLabel(statusBox);
@@ -104,6 +128,8 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	form->addRow(T("KillSense.Status.Profile"), profile_);
 	form->addRow(T("KillSense.Status.State"), state_);
 	form->addRow(T("KillSense.Status.Kills"), kills_);
+	form->addRow(T("KillSense.Status.Deaths"), deaths_);
+	form->addRow(T("KillSense.Status.Kd"), kd_);
 	form->addRow(T("KillSense.Status.Streak"), streak_);
 	form->addRow(T("KillSense.Status.LastEvent"), lastEvent_);
 	form->addRow(T("KillSense.Status.LastConfidence"), lastConfidence_);
@@ -310,6 +336,17 @@ void KillSenseDock::onSettings()
 	openSettings(SettingsDialog::DetectionTab);
 }
 
+void KillSenseDock::onCaptureNamePlate()
+{
+	auto c = controller();
+	if (!c)
+		return;
+	auto *dlg = new CaptureDialog(controller_, this);
+	dlg->setAttribute(Qt::WA_DeleteOnClose);
+	connect(dlg, &QDialog::accepted, this, [this]() { message_->setText(T("KillSense.Capture.Saved")); });
+	dlg->show();
+}
+
 void KillSenseDock::onDebugView()
 {
 	auto c = controller();
@@ -374,6 +411,12 @@ void KillSenseDock::refreshStatus()
 	}
 	kills_->setText(QString::number(s.session.kills));
 	streak_->setText(QStringLiteral("%1 (best %2)").arg(s.session.streak).arg(s.session.bestStreak));
+	deaths_->setText(QString::number(s.session.deaths));
+	kd_->setText(Q(kdRatioText(s.session)));
+	gamertag_->setText(s.gamertag.empty() ? T("KillSense.Player.NoGamertag")
+					      : T("KillSense.Player.Gamertag").arg(Q(s.gamertag)));
+	setupHint_->setText(Q(s.setupHint));
+	setupHint_->setVisible(!s.setupHint.empty());
 	if (s.session.lastEvent) {
 		const auto &ev = *s.session.lastEvent;
 		const QString when =

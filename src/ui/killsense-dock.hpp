@@ -37,6 +37,7 @@ private slots:
 	void onEventOutputs();
 	void onDebugView();
 	void onSettings();
+	void onCaptureNamePlate();
 	void refreshStatus();
 
 private:
@@ -52,6 +53,11 @@ private:
 	QLabel *state_ = nullptr;
 	QLabel *kills_ = nullptr;
 	QLabel *streak_ = nullptr;
+	QLabel *deaths_ = nullptr;
+	QLabel *kd_ = nullptr;
+	QLabel *gamertag_ = nullptr;
+	QLabel *setupHint_ = nullptr;
+	QPushButton *capture_ = nullptr;
 	QLabel *lastEvent_ = nullptr;
 	QLabel *lastConfidence_ = nullptr;
 	QLabel *fps_ = nullptr;

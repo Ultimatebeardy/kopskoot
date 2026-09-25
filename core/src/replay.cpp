@@ -19,7 +19,10 @@ ReplayResult runReplay(const ReplayOptions &opt)
 		result.error = "profile invalid: " + (parsed.errors.empty() ? std::string("?") : parsed.errors.front());
 		return result;
 	}
-	ProfilePtr profile = applyOverrides(*parsed.profile, opt.overrides);
+	auto personal = personalizeProfile(*parsed.profile, opt.personalization);
+	for (const auto &w : personal.warnings)
+		KS_LOG_WARN("%s", w.c_str());
+	ProfilePtr profile = applyOverrides(*personal.profile, opt.overrides);
 
 	std::vector<std::filesystem::path> frames;
 	std::error_code ec;

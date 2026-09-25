@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "killsense/session.hpp"
 
+#include <cstdio>
+#include <utility>
+
 #include <algorithm>
 
 namespace killsense {
@@ -49,6 +52,30 @@ SessionStats SessionTracker::stats() const
 {
 	std::lock_guard<std::mutex> lock(mutex_);
 	return stats_;
+}
+
+std::string kdRatioText(const SessionStats &s)
+{
+	char buf[32];
+	const double kd = static_cast<double>(s.kills) / static_cast<double>(s.deaths > 0 ? s.deaths : 1);
+	std::snprintf(buf, sizeof(buf), "%.2f", kd);
+	return buf;
+}
+
+std::string formatCounter(const std::string &format, const SessionStats &s)
+{
+	const std::pair<const char *, std::string> vars[] = {{"{kills}", std::to_string(s.kills)},
+							     {"{deaths}", std::to_string(s.deaths)},
+							     {"{streak}", std::to_string(s.streak)},
+							     {"{best}", std::to_string(s.bestStreak)},
+							     {"{kd}", kdRatioText(s)}};
+	std::string out = format;
+	for (const auto &v : vars) {
+		const std::string key = v.first;
+		for (size_t pos = 0; (pos = out.find(key, pos)) != std::string::npos; pos += v.second.size())
+			out.replace(pos, key.size(), v.second);
+	}
+	return out;
 }
 
 } // namespace killsense

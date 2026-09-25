@@ -65,6 +65,14 @@ FusionResult fuseTarget(const TargetSpec &target, const std::vector<DetectorOutp
 			}
 		}
 	}
+	for (const auto &id : target.requireAll) {
+		const DetectorOutput *o = findOutput(outputs, id);
+		if (!o || !o->available || !o->active) {
+			r.requireAllSatisfied = false;
+			r.requireAllMissing = id + (!o || !o->available ? " (unavailable)" : "");
+			break;
+		}
+	}
 	if (r.vetoed)
 		r.confidence = 0.0;
 
@@ -80,6 +88,8 @@ FusionResult fuseTarget(const TargetSpec &target, const std::vector<DetectorOutp
 		std::snprintf(buf, sizeof(buf), "%d active signal(s) < minSignals %d", r.activeSignals,
 			      target.minSignals);
 		r.reason = buf;
+	} else if (!r.requireAllSatisfied) {
+		r.reason = "requireAll detector not active: " + r.requireAllMissing;
 	} else if (!r.requireAnySatisfied) {
 		r.reason = "none of requireAny detectors active";
 	} else {

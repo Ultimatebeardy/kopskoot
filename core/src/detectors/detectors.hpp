@@ -52,6 +52,7 @@ private:
 	std::string lastRaw_;
 	std::string lastNorm_;
 	std::vector<PixelRect> lastBoxes_;
+	std::vector<OcrLine> lastLines_; // word boxes in region coordinates (for kill-feed roles)
 };
 
 class ColorDetector final : public IDetector {

@@ -12,8 +12,11 @@ A native OBS Studio plugin that detects kills in your gameplay from the video OB
   - Detectors: template/icon, OCR (Windows.Media.Ocr), colour and HUD change.
   - Evidence fusion requires at least `minSignals` signals, so OCR alone never proves a kill.
   - A temporal tracker counts a message that stays on screen once, still counts rapid consecutive kills, and ignores flicker.
-- Profiles: JSON files for new games with no recompiling (`docs/PROFILE_SCHEMA.md`). Ships with `generic.json` and `sample-killfeed.json`.
-- Tests: 57 unit tests, a replay tool for recorded frames, a headless libobs harness and an end-to-end obs-websocket script.
+- Profiles: JSON files for new games with no recompiling (`docs/PROFILE_SCHEMA.md`). Ships with `generic.json`, `sample-killfeed.json` and `the-finals.json`.
+- Per-player setup: enter **your gamertag** in Settings and press **Capture my name plate** once in a match. Profiles use `{gamertag}` and per-user images so only *your* kills count, not kills you watch while spectating. Nothing is uploaded; the captured image stays in the OBS config folder.
+- Kills, deaths and K/D in the dock, in every event and in `GetStatus`.
+- Free on-screen counter: pick any OBS Text source in Settings → Event Outputs and KillSense keeps it updated (`KILLS {kills} | DEATHS {deaths} | K/D {kd}`). Styled/animated overlays are separate Browser Sources that listen to the obs-websocket events (see `docs/EVENT_SCHEMA.md`).
+- Tests: 70 unit tests, a replay tool for recorded frames, a headless libobs harness and an end-to-end obs-websocket script.
 - Planned: Learn This Game UI (M2; the core logic is already built and tested), localhost output and a Streamer.bot pack (M3), ONNX visual classification (M4). See `docs/MILESTONES.md`.
 
 > **Verification status.** The core, the tests and the plugin were compiled and run on Linux against real OBS 30.2 (details in `docs/TESTING.md`). The Windows/MSVC build and the Windows OCR backend have **not yet been compiled** in this environment. Build on Windows first and report any compiler errors.

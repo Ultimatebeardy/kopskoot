@@ -3,7 +3,8 @@
 //   confidence = sum(weight_i * score_i) / sum(weight_i)   over AVAILABLE signals
 // A target "passes" only if confidence >= threshold AND at least minSignals
 // signals are active AND (if requireAny is set) one of those detectors is
-// active AND no veto was raised. OCR alone therefore never proves a kill
+// active AND every requireAll detector is available and active AND no veto
+// was raised. OCR alone therefore never proves a kill
 // unless a profile explicitly allows it (minSignals = 1).
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
@@ -37,6 +38,8 @@ struct FusionResult {
 	bool vetoed = false;
 	std::string vetoReason;
 	bool requireAnySatisfied = true;
+	bool requireAllSatisfied = true;
+	std::string requireAllMissing;
 	bool passes = false;
 	int instanceCount = 0;
 	std::vector<Contribution> contributions;

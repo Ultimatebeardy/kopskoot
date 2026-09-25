@@ -52,9 +52,11 @@ void Controller::init()
 	BStr cfg(obs_module_config_path("config.json"));
 	BStr userProfiles(obs_module_config_path("profiles"));
 	BStr builtin(obs_module_file("profiles"));
+	BStr userTemplates(obs_module_config_path("user-templates"));
 	configFile_ = pathFromUtf8(toString(cfg));
 	userProfilesDir_ = pathFromUtf8(toString(userProfiles));
 	builtinProfilesDir_ = pathFromUtf8(toString(builtin));
+	userTemplatesDir_ = pathFromUtf8(toString(userTemplates));
 
 	std::error_code ec;
 	if (!userProfilesDir_.empty())
@@ -189,6 +191,7 @@ void Controller::onFinishedLoading()
 		if (!source)
 			KS_LOG_WARN("saved source '%s' not found in this scene collection", config_.sourceName.c_str());
 	}
+	refreshCounterSource();
 	if (config_.autoStart) {
 		std::string err;
 		if (!startDetection(&err))
@@ -313,12 +316,25 @@ void Controller::rebuildActiveProfile()
 		KS_LOG_ERROR("no usable profile found (is the data/profiles directory installed?)");
 		return;
 	}
+	baseProfile_ = base;
+	Personalization pers;
+	pers.gamertag = config_.gamertag;
+	pers.userTemplateDir = userTemplatesDir_;
+	const PersonalizeResult personal = personalizeProfile(*base, pers);
+	for (const auto &w : personal.warnings)
+		KS_LOG_INFO("profile '%s': %s", base->id.c_str(), w.c_str());
+	if (personal.needsGamertag)
+		setupHint_ = "Set your gamertag in Settings so only YOUR kills count.";
+	else if (!personal.missingUserTemplates.empty())
+		setupHint_ = "In a match, press 'Capture my name plate' so only YOUR kills count.";
+	else
+		setupHint_.clear();
 	ProfileOverrides ov;
 	ov.threshold = config_.thresholdOverride;
 	ov.cooldownMs = config_.cooldownOverrideMs;
 	if (config_.customRoiEnabled)
 		ov.primaryRegion = config_.customRoi;
-	activeProfile_ = applyOverrides(*base, ov);
+	activeProfile_ = applyOverrides(*personal.profile, ov);
 }
 
 void Controller::pushProfileToPipeline()
@@ -402,6 +418,7 @@ void Controller::publish(KillEvent ev)
 		    ev.confidence, static_cast<long long>(ev.sessionKills), static_cast<long long>(ev.killStreak),
 		    ev.test ? " [test]" : "");
 	bus_.publish(ev);
+	refreshCounterSource();
 }
 
 void Controller::testKill()
@@ -434,6 +451,7 @@ void Controller::resetSession()
 	if (worker_)
 		worker_->requestTemporalReset();
 	bus_.publish(ev);
+	refreshCounterSource();
 	KS_LOG_INFO("session reset");
 }
 
@@ -470,6 +488,7 @@ void Controller::applyConfig(const AppConfig &cfg)
 	if (ocrChanged)
 		KS_LOG_INFO("OCR language change takes effect after OBS restarts");
 	saveConfig();
+	refreshCounterSource();
 }
 
 void Controller::saveConfig()
@@ -491,6 +510,8 @@ ControllerSnapshot Controller::snapshot() const
 		s.profileId = activeProfile_ ? activeProfile_->id : "";
 		s.profileName = activeProfile_ ? activeProfile_->displayName : "(none)";
 		s.detecting = detecting_;
+		s.gamertag = config_.gamertag;
+		s.setupHint = setupHint_;
 	}
 	s.session = session_.stats();
 	if (worker_)
@@ -523,6 +544,84 @@ ControllerSnapshot Controller::snapshot() const
 	return s;
 }
 
+std::vector<UserTemplateSlot> Controller::userTemplateSlots() const
+{
+	std::vector<UserTemplateSlot> out;
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (!baseProfile_)
+		return out;
+	for (const auto &d : baseProfile_->detectors) {
+		if (!d.enabled || d.kind != DetectorKind::Template || d.userTemplate.empty())
+			continue;
+		UserTemplateSlot slot;
+		slot.name = d.userTemplate;
+		slot.detectorId = d.id;
+		slot.regionId = d.region;
+		std::error_code ec;
+		slot.captured = std::filesystem::exists(userTemplatePath(userTemplatesDir_, baseProfile_->id, d.userTemplate), ec);
+		out.push_back(std::move(slot));
+	}
+	return out;
+}
+
+bool Controller::saveUserTemplate(const std::string &name, const Image &rgba, std::string *error)
+{
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
+	if (!baseProfile_ || userTemplatesDir_.empty()) {
+		if (error)
+			*error = "no active profile";
+		return false;
+	}
+	const auto file = userTemplatePath(userTemplatesDir_, baseProfile_->id, name);
+	std::error_code ec;
+	std::filesystem::create_directories(file.parent_path(), ec);
+	if (!savePng(pathToUtf8(file), rgba)) {
+		if (error)
+			*error = "could not write " + pathToUtf8(file);
+		return false;
+	}
+	KS_LOG_INFO("saved user template '%s' for profile '%s'", name.c_str(), baseProfile_->id.c_str());
+	rebuildActiveProfile();
+	pushProfileToPipeline();
+	return true;
+}
+
+void Controller::refreshCounterSource()
+{
+	// Text sources must be updated on the UI thread; events arrive on the
+	// worker / hotkey / websocket threads.
+	obs_queue_task(
+		OBS_TASK_UI,
+		[](void *) {
+			if (auto c = controllerInstance())
+				c->updateCounterSourceOnUiThread();
+		},
+		nullptr, false);
+}
+
+void Controller::updateCounterSourceOnUiThread()
+{
+	std::string name, format;
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex_);
+		if (shutDown_)
+			return;
+		name = config_.counterTextSource;
+		format = config_.counterFormat;
+	}
+	if (name.empty())
+		return;
+	SourcePtr source(obs_get_source_by_name(name.c_str()));
+	if (!source) {
+		KS_LOG_DEBUG("counter text source '%s' not found", name.c_str());
+		return;
+	}
+	const std::string text = formatCounter(format, session_.stats());
+	DataPtr settings(obs_data_create());
+	obs_data_set_string(settings.get(), "text", text.c_str());
+	obs_source_update(source.get(), settings.get());
+}
+
 std::string Controller::statusJson() const
 {
 	const ControllerSnapshot s = snapshot();
@@ -538,6 +637,8 @@ std::string Controller::statusJson() const
 	j["killStreak"] = s.session.streak;
 	j["bestStreak"] = s.session.bestStreak;
 	j["sessionDeaths"] = s.session.deaths;
+	j["kdRatio"] = kdRatioText(s.session);
+	j["setupHint"] = s.setupHint;
 	j["analysisFps"] = s.worker.analysisFps;
 	j["avgProcessingMs"] = s.worker.avgProcessingMs;
 	j["droppedFrames"] = s.worker.framesDropped + s.sampler.skippedWorkerBusy;

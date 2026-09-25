@@ -64,6 +64,8 @@ target_sources(
     src/obs/obs-sources.hpp
     src/outputs/websocket-vendor-output.cpp
     src/outputs/websocket-vendor-output.hpp
+    src/ui/capture-dialog.cpp
+    src/ui/capture-dialog.hpp
     src/ui/debug-view.cpp
     src/ui/debug-view.hpp
     src/ui/killsense-dock.cpp

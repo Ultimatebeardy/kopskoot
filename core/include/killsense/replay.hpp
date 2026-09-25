@@ -31,6 +31,7 @@ struct ReplayOptions {
 	ReplayOcrMode ocr = ReplayOcrMode::Sidecar;
 	std::string ocrLanguage;
 	ProfileOverrides overrides;
+	Personalization personalization; // gamertag + captured user templates
 	bool collectFrameLog = false;
 };
 

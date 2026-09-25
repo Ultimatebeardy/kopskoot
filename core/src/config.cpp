@@ -42,6 +42,8 @@ std::string configToJson(const AppConfig &c)
 			{"jsonlFile", c.outputJsonl},
 			{"jsonlPath", c.jsonlPath}};
 	j["ocrLanguage"] = c.ocrLanguage;
+	j["gamertag"] = c.gamertag;
+	j["counter"] = {{"textSource", c.counterTextSource}, {"format", c.counterFormat}};
 	j["logLevel"] = logLevelName(c.logLevel);
 	j["telemetry"] = c.telemetry;
 	j["hotkeys"] = c.hotkeysJson;
@@ -125,6 +127,16 @@ ConfigLoadResult configFromJson(const std::string &text)
 		c.jsonlPath = get<std::string>(o, "jsonlPath", "", w);
 	}
 	c.ocrLanguage = get<std::string>(j, "ocrLanguage", "", w);
+	c.gamertag = get<std::string>(j, "gamertag", "", w);
+	if (c.gamertag.size() > 64)
+		c.gamertag.resize(64);
+	if (j.contains("counter") && j.at("counter").is_object()) {
+		const auto &o = j.at("counter");
+		c.counterTextSource = get<std::string>(o, "textSource", "", w);
+		c.counterFormat = get<std::string>(o, "format", c.counterFormat, w);
+		if (c.counterFormat.size() > 256)
+			c.counterFormat.resize(256);
+	}
 	LogLevel lvl;
 	if (parseLogLevel(get<std::string>(j, "logLevel", "info", w), lvl))
 		c.logLevel = lvl;

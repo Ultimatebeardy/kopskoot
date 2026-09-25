@@ -37,6 +37,13 @@ struct AppConfig {
 	std::string jsonlPath;
 
 	std::string ocrLanguage; // "" = Windows user profile languages
+	// The player's in-game name; profiles use it as {gamertag} (name plate,
+	// kill feed) so only YOUR kills count.
+	std::string gamertag;
+	// Free on-screen counter: an existing OBS text source the plugin keeps
+	// updated. Placeholders: {kills} {deaths} {streak} {best} {kd}.
+	std::string counterTextSource;
+	std::string counterFormat = "KILLS {kills}  |  DEATHS {deaths}";
 	LogLevel logLevel = LogLevel::Info;
 	bool telemetry = false; // opt-in; no telemetry is implemented or sent
 

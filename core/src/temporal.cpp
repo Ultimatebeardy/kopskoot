@@ -153,7 +153,7 @@ TemporalDecision TemporalTracker::update(const Observation &obs)
 			} else {
 				lowerFrames_ = 0;
 			}
-		} else if (obs.passes && !obs.text.empty() && !episodeText_.empty() &&
+		} else if (spec_.textSimilarity > 0.0 && obs.passes && !obs.text.empty() && !episodeText_.empty() &&
 			   !sameMessage(obs.text, episodeText_, spec_.textSimilarity)) {
 			if (!pendingText_.empty() && sameMessage(obs.text, pendingText_, spec_.textSimilarity))
 				++newTextFrames_;

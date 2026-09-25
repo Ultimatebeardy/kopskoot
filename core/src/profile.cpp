@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "killsense/profile.hpp"
 
+#include <cctype>
+
 #include "killsense/fsutil.hpp"
 #include "killsense/logging.hpp"
 #include "killsense/version.hpp"
@@ -236,6 +238,7 @@ void parseDetector(Reader &rd, const json &d, const std::string &path, const std
 	const std::string type = rd.str(d, "type", path, "", true);
 	spec.region = rd.str(d, "region", path, "", true);
 	spec.enabled = rd.boolean(d, "enabled", path, true);
+	spec.vetoWhenActive = rd.boolean(d, "vetoWhenActive", path, false);
 	if (!spec.id.empty() && !isValidId(spec.id))
 		rd.errors.push_back(path + ".id contains invalid characters");
 	if (!spec.region.empty() && !p.findRegion(spec.region))
@@ -244,8 +247,15 @@ void parseDetector(Reader &rd, const json &d, const std::string &path, const std
 	const std::string p2 = path + "(" + spec.id + ")";
 	if (type == "template") {
 		spec.kind = DetectorKind::Template;
-		rd.checkKeys(d, p2, {"id", "type", "region", "enabled", "file", "threshold", "scales", "maxInstances"});
-		spec.file = rd.str(d, "file", p2, "", true);
+		rd.checkKeys(d, p2,
+			     {"id", "type", "region", "enabled", "vetoWhenActive", "file", "userTemplate", "threshold",
+			      "scales", "maxInstances"});
+		spec.file = rd.str(d, "file", p2, "");
+		spec.userTemplate = rd.str(d, "userTemplate", p2, "");
+		if (spec.file.empty() && spec.userTemplate.empty())
+			rd.errors.push_back(p2 + " needs \"file\" or \"userTemplate\"");
+		if (!spec.userTemplate.empty() && !isValidId(spec.userTemplate))
+			rd.errors.push_back(p2 + ".userTemplate must be a simple name (letters, digits, - and _)");
 		spec.threshold = rd.num(d, "threshold", p2, 0.80, 0.1, 1.0);
 		spec.maxInstances = rd.integer(d, "maxInstances", p2, 5, 1, 32);
 		if (d.contains("scales")) {
@@ -281,21 +291,30 @@ void parseDetector(Reader &rd, const json &d, const std::string &path, const std
 	} else if (type == "ocr") {
 		spec.kind = DetectorKind::Ocr;
 		rd.checkKeys(d, p2,
-			     {"id", "type", "region", "enabled", "keywords", "patterns", "negativeWords", "fuzzy",
-			      "upscale", "refreshMs"});
+			     {"id", "type", "region", "enabled", "vetoWhenActive", "keywords", "patterns", "negativeWords",
+			      "fuzzy", "upscale", "refreshMs", "role"});
+		spec.role = rd.str(d, "role", p2, "");
+		if (!spec.role.empty() && spec.role != "actor" && spec.role != "victim")
+			rd.errors.push_back(p2 + ".role must be \"actor\" or \"victim\"");
 		spec.keywords = rd.strList(d, "keywords", p2);
 		spec.patterns = rd.strList(d, "patterns", p2);
 		spec.negativeWords = rd.strList(d, "negativeWords", p2);
 		spec.fuzzy = rd.num(d, "fuzzy", p2, 0.80, 0.5, 1.0);
 		spec.upscale = rd.num(d, "upscale", p2, 2.0, 1.0, 4.0);
 		spec.refreshMs = rd.integer(d, "refreshMs", p2, 1000, 0, 60000);
-		for (const auto &pat : spec.patterns)
-			rd.validRegex(pat, p2 + ".patterns");
+		for (const auto &pat : spec.patterns) {
+			// {gamertag} is substituted (regex-escaped) later; validate with a stand-in.
+			std::string probe = pat;
+			for (size_t pos; (pos = probe.find(kGamertagPlaceholder)) != std::string::npos;)
+				probe.replace(pos, std::char_traits<char>::length(kGamertagPlaceholder), "GAMERTAG");
+			rd.validRegex(probe, p2 + ".patterns");
+		}
 		if (spec.keywords.empty() && spec.patterns.empty())
 			rd.errors.push_back(p2 + " needs at least one keyword or pattern");
 	} else if (type == "color") {
 		spec.kind = DetectorKind::Color;
-		rd.checkKeys(d, p2, {"id", "type", "region", "enabled", "hsv", "minFraction", "maxFraction"});
+		rd.checkKeys(d, p2,
+			     {"id", "type", "region", "enabled", "vetoWhenActive", "hsv", "minFraction", "maxFraction"});
 		if (d.contains("hsv")) {
 			const auto &h = d.at("hsv");
 			rd.checkKeys(h, p2 + ".hsv", {"hMin", "hMax", "sMin", "sMax", "vMin", "vMax"});
@@ -314,7 +333,7 @@ void parseDetector(Reader &rd, const json &d, const std::string &path, const std
 			rd.errors.push_back(p2 + ".maxFraction must be >= minFraction");
 	} else if (type == "hud_change") {
 		spec.kind = DetectorKind::HudChange;
-		rd.checkKeys(d, p2, {"id", "type", "region", "enabled", "threshold", "holdMs"});
+		rd.checkKeys(d, p2, {"id", "type", "region", "enabled", "vetoWhenActive", "threshold", "holdMs"});
 		spec.changeThreshold = rd.num(d, "threshold", p2, 10.0, 0.5, 255.0);
 		spec.holdMs = rd.integer(d, "holdMs", p2, 1200, 0, 60000);
 	} else if (type == "onnx") {
@@ -338,7 +357,8 @@ void parseTarget(Reader &rd, const json &t, const std::string &path, GameProfile
 		rd.errors.push_back(path + " must be an object");
 		return;
 	}
-	rd.checkKeys(t, path, {"id", "event", "signals", "threshold", "minSignals", "requireAny", "temporal", "rules"});
+	rd.checkKeys(t, path,
+		     {"id", "event", "signals", "threshold", "minSignals", "requireAny", "requireAll", "temporal", "rules"});
 	TargetSpec target;
 	const std::string ev = rd.str(t, "event", path, "kill");
 	const auto type = parseEventType(ev);
@@ -353,6 +373,10 @@ void parseTarget(Reader &rd, const json &t, const std::string &path, GameProfile
 	for (const auto &r : target.requireAny)
 		if (!p.findDetector(r))
 			rd.errors.push_back(path + ".requireAny references unknown detector '" + r + "'");
+	target.requireAll = rd.strList(t, "requireAll", path);
+	for (const auto &r : target.requireAll)
+		if (!p.findDetector(r))
+			rd.errors.push_back(path + ".requireAll references unknown detector '" + r + "'");
 
 	if (!t.contains("signals") || !t.at("signals").is_array() || t.at("signals").empty()) {
 		rd.errors.push_back(path + ".signalSpecs must be a non-empty array");
@@ -373,7 +397,10 @@ void parseTarget(Reader &rd, const json &t, const std::string &path, GameProfile
 			if (!p.findDetector(sig.detector))
 				rd.errors.push_back(sp + ".detector references unknown detector '" + sig.detector +
 						    "'");
-			if (sig.weight <= 0.0)
+			// Weight 0 is fine for "gate" signals that only contribute a veto.
+			const DetectorSpec *sd = p.findDetector(sig.detector);
+			const bool vetoOnly = sd && sig.veto && (sd->vetoWhenActive || !sd->negativeWords.empty());
+			if (sig.weight <= 0.0 && !vetoOnly)
 				rd.warnings.push_back(sp + ": weight is 0, signal will not contribute");
 			target.signalSpecs.push_back(std::move(sig));
 		}
@@ -602,6 +629,99 @@ std::shared_ptr<GameProfile> applyOverrides(const GameProfile &profile, const Pr
 			a.regions.erase(copy->regions.front().id);
 	}
 	return copy;
+}
+
+namespace {
+bool containsPlaceholder(const std::vector<std::string> &list)
+{
+	for (const auto &s : list)
+		if (s.find(kGamertagPlaceholder) != std::string::npos)
+			return true;
+	return false;
+}
+
+std::string replaceAll(std::string s, const std::string &what, const std::string &with)
+{
+	for (size_t pos = 0; (pos = s.find(what, pos)) != std::string::npos; pos += with.size())
+		s.replace(pos, what.size(), with);
+	return s;
+}
+
+std::string regexEscape(const std::string &s)
+{
+	static const std::string special = R"(\^$.|?*+()[]{}/-)";
+	std::string out;
+	for (char c : s) {
+		if (special.find(c) != std::string::npos)
+			out += '\\';
+		out += c;
+	}
+	return out;
+}
+
+bool detectorUsesGamertag(const DetectorSpec &d)
+{
+	return containsPlaceholder(d.keywords) || containsPlaceholder(d.patterns) || containsPlaceholder(d.negativeWords);
+}
+} // namespace
+
+bool profileUsesGamertag(const GameProfile &profile)
+{
+	for (const auto &d : profile.detectors)
+		if (d.enabled && detectorUsesGamertag(d))
+			return true;
+	return false;
+}
+
+std::filesystem::path userTemplatePath(const std::filesystem::path &userTemplateDir, const std::string &profileId,
+				       const std::string &name)
+{
+	return userTemplateDir / pathFromUtf8(profileId) / pathFromUtf8(name + ".png");
+}
+
+PersonalizeResult personalizeProfile(const GameProfile &profile, const Personalization &pers)
+{
+	PersonalizeResult r;
+	r.profile = std::make_shared<GameProfile>(profile);
+	std::string tag = pers.gamertag;
+	// Trim surrounding whitespace.
+	while (!tag.empty() && std::isspace(static_cast<unsigned char>(tag.front())))
+		tag.erase(tag.begin());
+	while (!tag.empty() && std::isspace(static_cast<unsigned char>(tag.back())))
+		tag.pop_back();
+	for (auto &d : r.profile->detectors) {
+		if (!d.enabled)
+			continue;
+		if (detectorUsesGamertag(d)) {
+			if (tag.empty()) {
+				r.needsGamertag = true;
+				d.enabled = false; // reported as unavailable by fusion
+				r.warnings.push_back("detector '" + d.id + "' needs your gamertag (Settings)");
+				continue;
+			}
+			for (auto &k : d.keywords)
+				k = replaceAll(k, kGamertagPlaceholder, tag);
+			for (auto &k : d.negativeWords)
+				k = replaceAll(k, kGamertagPlaceholder, tag);
+			for (auto &k : d.patterns)
+				k = replaceAll(k, kGamertagPlaceholder, regexEscape(tag));
+		}
+		if (d.kind == DetectorKind::Template && !d.userTemplate.empty()) {
+			std::error_code ec;
+			const auto path = pers.userTemplateDir.empty()
+						  ? std::filesystem::path()
+						  : userTemplatePath(pers.userTemplateDir, profile.id, d.userTemplate);
+			if (!path.empty() && std::filesystem::exists(path, ec)) {
+				d.resolvedFile = path;
+			} else if (d.file.empty()) {
+				r.missingUserTemplates.push_back(d.userTemplate);
+				d.resolvedFile = path; // missing file -> detector reports unavailable
+				r.warnings.push_back("detector '" + d.id + "' needs a captured '" + d.userTemplate +
+						     "' image (dock: Capture my name plate)");
+			}
+		}
+	}
+	return r;
 }
 
 void ProfileRegistry::loadDir(const std::filesystem::path &dir, bool builtin, std::map<std::string, ProfilePtr> &out,

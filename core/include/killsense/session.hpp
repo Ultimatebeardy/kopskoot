@@ -6,6 +6,7 @@
 
 #include <mutex>
 #include <optional>
+#include <string>
 
 namespace killsense {
 
@@ -18,6 +19,11 @@ struct SessionStats {
 	int64_t sequence = 0;
 	std::optional<KillEvent> lastEvent;
 };
+
+// K/D ratio as shown to viewers: kills / max(deaths, 1), two decimals.
+std::string kdRatioText(const SessionStats &s);
+// Replaces {kills} {deaths} {streak} {best} {kd} in `format`.
+std::string formatCounter(const std::string &format, const SessionStats &s);
 
 class SessionTracker {
 public:

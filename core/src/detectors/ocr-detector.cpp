@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "detectors.hpp"
 
+#include "killsense/killfeed.hpp"
 #include "killsense/logging.hpp"
 
 #include <algorithm>
@@ -41,6 +42,7 @@ void OcrDetector::reset()
 	lastRaw_.clear();
 	lastNorm_.clear();
 	lastBoxes_.clear();
+	lastLines_.clear();
 }
 
 namespace {
@@ -67,6 +69,32 @@ void OcrDetector::evaluate(DetectorOutput &out) const
 			out.vetoReason = "negative phrase '" + neg + "'";
 			break;
 		}
+	}
+	if (!spec_.role.empty()) {
+		// Kill-feed mode: the keyword (usually the gamertag) must appear in
+		// the requested role. Each matching feed line is one instance.
+		const FeedRole want = spec_.role == "victim" ? FeedRole::Victim : FeedRole::Actor;
+		int count = 0;
+		int others = 0;
+		out.boxes.clear();
+		for (const auto &k : spec_.keywords) {
+			for (const auto &m : findNameInFeed(lastLines_, k, spec_.fuzzy)) {
+				if (m.role == want) {
+					++count;
+					out.boxes.push_back(m.box);
+				} else {
+					++others;
+				}
+			}
+		}
+		out.instances = count;
+		out.score = count > 0 ? 1.0 : 0.0;
+		out.active = count > 0;
+		out.detail = count > 0 ? std::string("name found as ") + spec_.role + " x" + std::to_string(count)
+				       : (others > 0 ? "name found, but not as " + spec_.role : "name not in feed");
+		if (out.veto)
+			out.detail += " (veto: " + out.vetoReason + ")";
+		return;
 	}
 	double best = 0.0;
 	std::string bestWhat;
@@ -123,18 +151,26 @@ void OcrDetector::process(const DetectorContext &ctx, DetectorOutput &out)
 			lastRaw_ = r.text;
 			lastNorm_ = normalizeText(r.text);
 			lastBoxes_.clear();
+			lastLines_.clear();
 			const double inv = input == &scratch_ ? 1.0 / spec_.upscale : 1.0;
-			for (const auto &line : r.lines)
-				for (const auto &w : line.words)
-					lastBoxes_.push_back(PixelRect{static_cast<int>(w.box.x * inv),
-								       static_cast<int>(w.box.y * inv),
-								       static_cast<int>(std::ceil(w.box.w * inv)),
-								       static_cast<int>(std::ceil(w.box.h * inv))});
+			for (const auto &line : r.lines) {
+				OcrLine scaled;
+				scaled.text = line.text;
+				for (const auto &w : line.words) {
+					const PixelRect box{static_cast<int>(w.box.x * inv), static_cast<int>(w.box.y * inv),
+							    static_cast<int>(std::ceil(w.box.w * inv)),
+							    static_cast<int>(std::ceil(w.box.h * inv))};
+					lastBoxes_.push_back(box);
+					scaled.words.push_back(OcrWord{w.text, box});
+				}
+				lastLines_.push_back(std::move(scaled));
+			}
 		} else {
 			KS_LOG_DEBUG("OCR '%s' failed: %s", spec_.id.c_str(), r.error.c_str());
 			lastRaw_.clear();
 			lastNorm_.clear();
 			lastBoxes_.clear();
+			lastLines_.clear();
 		}
 		out.ran = true;
 	}

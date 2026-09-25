@@ -47,6 +47,7 @@ struct DetectorSpec {
 
 	// template
 	std::string file;
+	std::string userTemplate; // per-user template name (captured in the plugin), see personalizeProfile()
 	std::filesystem::path resolvedFile;
 	double threshold = 0.80;
 	std::vector<double> scales{1.0};
@@ -59,6 +60,10 @@ struct DetectorSpec {
 	double fuzzy = 0.80;  // minimum similarity for keyword matches
 	double upscale = 2.0; // OCR input upscale factor (small HUD text)
 	int refreshMs = 1000; // re-run OCR at least this often even if region unchanged
+	// Kill-feed role matching: "" (plain keyword search), "actor" (the keyword -
+	// usually {gamertag} - is the killer, i.e. has another name to its right) or
+	// "victim" (the keyword is the last name on its feed line).
+	std::string role;
 
 	// color
 	HsvRange hsv;
@@ -69,6 +74,10 @@ struct DetectorSpec {
 	double changeThreshold = 10.0; // mean abs diff (0..255) that counts as a change
 	int holdMs = 1200;             // how long a change keeps contributing evidence
 
+	// any kind: raise a veto whenever this detector is active (e.g. a "you are
+	// dead / spectating" screen element). Targets honour it unless the signal
+	// sets "veto": false.
+	bool vetoWhenActive = false;
 	// onnx (planned - Milestone 4)
 	std::string model;
 };
@@ -94,7 +103,7 @@ struct TemporalSpec {
 	int minEventIntervalMs = 150; // global debounce between two events of this target
 	int maxBurst = 4;             // max events emitted from a single instance-count jump
 	int maxHamming = 8;           // dHash distance treated as "same visual"
-	double textSimilarity = 0.80; // OCR text similarity treated as "same message"
+	double textSimilarity = 0.80; // OCR text similarity treated as "same message" (0 = text never splits an episode)
 	int recentCapacity = 16;      // number of fingerprints remembered
 };
 
@@ -105,6 +114,7 @@ struct TargetSpec {
 	double threshold = 0.80;
 	int minSignals = 2;
 	std::vector<std::string> requireAny; // at least one of these detectors must be active
+	std::vector<std::string> requireAll; // every one of these detectors must be available and active
 	TemporalSpec temporal;
 	std::vector<EventRule> rules;
 };
@@ -160,6 +170,29 @@ struct ProfileOverrides {
 	std::optional<NormRect> primaryRegion; // replaces the first region's rect
 };
 std::shared_ptr<GameProfile> applyOverrides(const GameProfile &profile, const ProfileOverrides &ov);
+
+// Per-user personalisation (gamertag + captured templates) applied after
+// loading. Profiles reference the gamertag as "{gamertag}" in OCR keywords,
+// patterns and negativeWords, and per-user images via "userTemplate".
+struct Personalization {
+	std::string gamertag;
+	std::filesystem::path userTemplateDir; // <plugin config>/user-templates
+};
+
+struct PersonalizeResult {
+	std::shared_ptr<GameProfile> profile;
+	bool needsGamertag = false;                    // profile uses {gamertag} but none is set
+	std::vector<std::string> missingUserTemplates; // userTemplate names not captured yet
+	std::vector<std::string> warnings;
+};
+
+inline constexpr const char *kGamertagPlaceholder = "{gamertag}";
+
+bool profileUsesGamertag(const GameProfile &profile);
+// <userTemplateDir>/<profileId>/<name>.png
+std::filesystem::path userTemplatePath(const std::filesystem::path &userTemplateDir, const std::string &profileId,
+				       const std::string &name);
+PersonalizeResult personalizeProfile(const GameProfile &profile, const Personalization &pers);
 
 struct ProfileLoadIssue {
 	std::string file;

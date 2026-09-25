@@ -161,6 +161,10 @@ void DetectionEngine::process(const FramePacket &packet, FrameAnalysis &out)
 			o.detail = std::string("exception: ") + e.what();
 			KS_LOG_WARN("detector '%s' threw: %s", o.detectorId.c_str(), e.what());
 		}
+		if (det->spec().vetoWhenActive && o.available && o.active && !o.veto) {
+			o.veto = true;
+			o.vetoReason = "'" + o.detectorId + "' is active";
+		}
 		out.detectors.push_back(std::move(o));
 	}
 
@@ -179,7 +183,11 @@ void DetectionEngine::process(const FramePacket &packet, FrameAnalysis &out)
 		obs.visualHash = it != regionCache_.end() ? it->second.hash : 0;
 		for (const auto &sig : ts.spec->signalSpecs) {
 			const DetectorOutput *o = findOutput(out.detectors, sig.detector);
-			if (o && o->kind == DetectorKind::Ocr && o->available && !o->text.empty()) {
+			// Only text read in the target's message region identifies "the
+			// message"; other OCR (name plates, kill feed, status bars) changing
+			// must not look like a new kill.
+			if (o && o->kind == DetectorKind::Ocr && o->available && !o->text.empty() &&
+			    (ts.hashRegion.empty() || o->regionId == ts.hashRegion)) {
 				if (!obs.text.empty())
 					obs.text += ' ';
 				obs.text += o->text;

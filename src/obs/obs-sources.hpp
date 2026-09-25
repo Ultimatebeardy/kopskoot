@@ -24,6 +24,9 @@ struct SourceInfo {
 // Video-capable inputs and scenes, sorted: captures first, then others, then scenes.
 std::vector<SourceInfo> listVideoSources();
 
+// Text sources (GDI+ / FreeType) that can show the free kill/death counter.
+std::vector<std::string> listTextSourceNames();
+
 // Resolves by UUID first, then by name. Returns an owned strong reference.
 SourcePtr findSource(const std::string &uuid, const std::string &name);
 

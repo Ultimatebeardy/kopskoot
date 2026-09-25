@@ -45,6 +45,18 @@ struct ControllerSnapshot {
 	bool websocketAvailable = false;
 	bool debugEnabled = false;
 	std::string gpuState;
+	std::string gamertag;
+	// Non-empty when the active profile needs player setup (gamertag or a
+	// captured name plate) before it can count YOUR kills.
+	std::string setupHint;
+};
+
+// A per-user image the active profile wants (e.g. your own name plate).
+struct UserTemplateSlot {
+	std::string name;       // file name (without .png)
+	std::string detectorId; // template detector that uses it
+	std::string regionId;   // HUD region to capture it from
+	bool captured = false;
 };
 
 class Controller {
@@ -78,6 +90,15 @@ public:
 	void testKill();
 	void resetSession();
 
+	// ---- personalisation ----
+	std::vector<UserTemplateSlot> userTemplateSlots() const;
+	// Saves `rgba` (reference scale) as the user's image for `name` in the
+	// active profile and reloads it into the pipeline.
+	bool saveUserTemplate(const std::string &name, const Image &rgba, std::string *error = nullptr);
+	std::filesystem::path userTemplatesDir() const { return userTemplatesDir_; }
+	// Pushes the current counters to the configured OBS text source (any thread).
+	void refreshCounterSource();
+
 	// ---- debug ----
 	void setDebugEnabled(bool enabled);
 	bool debugSnapshot(DebugSnapshot &out) const;
@@ -101,6 +122,7 @@ private:
 	void pushProfileToPipeline(); // requires mutex_
 	void onDetections(const std::vector<DetectedEvent> &events, const ProfilePtr &profile);
 	void publish(KillEvent ev);
+	void updateCounterSourceOnUiThread();
 	void loadHotkeys();
 	void storeHotkeys(); // requires mutex_
 
@@ -110,10 +132,13 @@ private:
 	std::filesystem::path configFile_;
 	std::filesystem::path builtinProfilesDir_;
 	std::filesystem::path userProfilesDir_;
+	std::filesystem::path userTemplatesDir_;
 
 	mutable std::recursive_mutex mutex_; // guards config_, activeProfile_, lifecycle
 	AppConfig config_;
 	ProfilePtr activeProfile_; // selected profile with user overrides applied
+	ProfilePtr baseProfile_;   // selected profile as loaded (before personalisation)
+	std::string setupHint_;
 	bool detecting_ = false;
 	bool exiting_ = false;
 	bool shutDown_ = false;

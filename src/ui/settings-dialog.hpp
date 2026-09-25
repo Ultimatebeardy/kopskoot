@@ -34,6 +34,7 @@ private:
 	std::shared_ptr<Controller> controller_;
 	QTabWidget *tabs_ = nullptr;
 	// Detection
+	QLineEdit *gamertag_ = nullptr;
 	QComboBox *preset_ = nullptr;
 	QDoubleSpinBox *fps_ = nullptr;
 	QCheckBox *thresholdOn_ = nullptr;
@@ -51,6 +52,8 @@ private:
 	QLabel *websocketStatus_ = nullptr;
 	QCheckBox *jsonl_ = nullptr;
 	QLineEdit *jsonlPath_ = nullptr;
+	QComboBox *counterSource_ = nullptr;
+	QLineEdit *counterFormat_ = nullptr;
 	// Advanced
 	QComboBox *logLevel_ = nullptr;
 	QLineEdit *ocrLanguage_ = nullptr;

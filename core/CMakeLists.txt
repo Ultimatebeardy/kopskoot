@@ -10,7 +10,7 @@
 cmake_minimum_required(VERSION 3.24...3.30)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  project(killsense-core VERSION 0.1.0 LANGUAGES C CXX)
+  project(killsense-core VERSION 0.2.0 LANGUAGES C CXX)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   set(KILLSENSE_STANDALONE ON)
@@ -62,6 +62,8 @@ target_sources(
     src/fsutil.cpp
     src/fusion.cpp
     src/image.cpp
+    src/killfeed.cpp
+    src/user-template.cpp
     src/logging.cpp
     src/profile.cpp
     src/replay.cpp

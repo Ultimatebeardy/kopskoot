@@ -4,6 +4,9 @@
 #include "ui-common.hpp"
 
 #include "../controller.hpp"
+#include "../obs/obs-sources.hpp"
+
+#include <algorithm>
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -44,6 +47,13 @@ SettingsDialog::SettingsDialog(std::shared_ptr<Controller> controller, int initi
 	// ---- Detection ----
 	auto *det = new QWidget(tabs_);
 	auto *df = new QFormLayout(det);
+	gamertag_ = new QLineEdit(det);
+	gamertag_->setMaxLength(64);
+	gamertag_->setPlaceholderText(T("KillSense.Settings.Gamertag.Placeholder"));
+	df->addRow(T("KillSense.Settings.Gamertag"), gamertag_);
+	auto *gamertagHelp = new QLabel(T("KillSense.Settings.Gamertag.Help"), det);
+	gamertagHelp->setWordWrap(true);
+	df->addRow(gamertagHelp);
 	preset_ = new QComboBox(det);
 	preset_->addItem(T("KillSense.Preset.LowImpact"), QStringLiteral("low_impact"));
 	preset_->addItem(T("KillSense.Preset.Balanced"), QStringLiteral("balanced"));
@@ -109,6 +119,16 @@ SettingsDialog::SettingsDialog(std::shared_ptr<Controller> controller, int initi
 	pathRow->addWidget(jsonlPath_, 1);
 	pathRow->addWidget(browse);
 	of->addRow(T("KillSense.Outputs.JsonlPath"), pathRow);
+	counterSource_ = new QComboBox(out);
+	counterSource_->addItem(T("KillSense.Counter.None"), QString());
+	for (const auto &name : listTextSourceNames())
+		counterSource_->addItem(Q(name), Q(name));
+	of->addRow(T("KillSense.Counter.Source"), counterSource_);
+	counterFormat_ = new QLineEdit(out);
+	of->addRow(T("KillSense.Counter.Format"), counterFormat_);
+	auto *counterHelp = new QLabel(T("KillSense.Counter.Help"), out);
+	counterHelp->setWordWrap(true);
+	of->addRow(counterHelp);
 	auto *planned = new QLabel(T("KillSense.Outputs.Planned"), out);
 	planned->setWordWrap(true);
 	of->addRow(planned);
@@ -142,6 +162,11 @@ SettingsDialog::SettingsDialog(std::shared_ptr<Controller> controller, int initi
 void SettingsDialog::load()
 {
 	const AppConfig c = controller_->config();
+	gamertag_->setText(Q(c.gamertag));
+	if (!c.counterTextSource.empty() && counterSource_->findData(Q(c.counterTextSource)) < 0)
+		counterSource_->addItem(Q(c.counterTextSource) + QStringLiteral(" (missing)"), Q(c.counterTextSource));
+	counterSource_->setCurrentIndex(std::max(0, counterSource_->findData(Q(c.counterTextSource))));
+	counterFormat_->setText(Q(c.counterFormat));
 	preset_->setCurrentIndex(preset_->findData(QString::fromLatin1(presetId(c.preset))));
 	fps_->setValue(c.analysisFpsOverride);
 	thresholdOn_->setChecked(c.thresholdOverride.has_value());
@@ -174,6 +199,11 @@ void SettingsDialog::onBrowseJsonl()
 void SettingsDialog::onAccept()
 {
 	AppConfig c = controller_->config();
+	c.gamertag = S(gamertag_->text().trimmed());
+	c.counterTextSource = S(counterSource_->currentData().toString());
+	c.counterFormat = S(counterFormat_->text());
+	if (c.counterFormat.empty())
+		c.counterFormat = AppConfig{}.counterFormat;
 	PerformancePreset preset;
 	if (parsePreset(S(preset_->currentData().toString()), preset))
 		c.preset = preset;
