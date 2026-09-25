@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "generic",
+  "displayName": "Generic (unknown game)",
+  "description": "Heuristic fallback for games without a profile. Looks for common kill phrases in the typical kill-feed and centre-banner areas and requires a visual change at the same time. Needs OCR (Windows.Media.Ocr). Expect lower accuracy than a game-specific profile; other players' kill-feed lines can cause false positives.",
+  "version": "1",
+  "generic": true,
+  "reference": { "width": 1920, "height": 1080 },
+  "regions": [
+    { "id": "feed", "rect": { "x": 0.66, "y": 0.02, "w": 0.33, "h": 0.28 }, "description": "Typical top-right kill feed" },
+    { "id": "banner", "rect": { "x": 0.30, "y": 0.56, "w": 0.40, "h": 0.16 }, "description": "Typical centre-lower kill banner / medal area" }
+  ],
+  "aspectOverrides": [
+    {
+      "aspect": "21:9",
+      "regions": {
+        "feed": { "x": 0.74, "y": 0.02, "w": 0.25, "h": 0.28 },
+        "banner": { "x": 0.35, "y": 0.56, "w": 0.30, "h": 0.16 }
+      }
+    }
+  ],
+  "detectors": [
+    {
+      "id": "feed_text",
+      "type": "ocr",
+      "region": "feed",
+      "keywords": ["YOU ELIMINATED", "YOU KILLED", "KILL CONFIRMED", "HEADSHOT", "ELIMINATED", "ENEMY DOWN", "KNOCKED DOWN"],
+      "patterns": ["\\byou\\s+(eliminated|killed|downed|knocked)\\b"],
+      "negativeWords": ["ELIMINATED BY", "KILLED BY", "YOU WERE", "KILLED YOU", "ELIMINATED YOU", "YOU DIED", "SPECTATING"],
+      "fuzzy": 0.82,
+      "upscale": 2.0,
+      "refreshMs": 1000
+    },
+    {
+      "id": "banner_text",
+      "type": "ocr",
+      "region": "banner",
+      "keywords": ["ELIMINATED", "KILLED", "HEADSHOT", "KILL CONFIRMED", "ENEMY DOWN", "KNOCKED DOWN", "DOUBLE KILL", "TRIPLE KILL"],
+      "negativeWords": ["ELIMINATED BY", "KILLED BY", "YOU WERE", "YOU DIED", "RESPAWN", "SPECTATING"],
+      "fuzzy": 0.82,
+      "upscale": 1.5,
+      "refreshMs": 1000
+    },
+    { "id": "feed_change", "type": "hud_change", "region": "feed", "threshold": 8, "holdMs": 1500 },
+    { "id": "banner_change", "type": "hud_change", "region": "banner", "threshold": 8, "holdMs": 1500 }
+  ],
+  "targets": [
+    {
+      "id": "kill",
+      "event": "kill",
+      "signals": [
+        { "detector": "feed_text", "weight": 0.35 },
+        { "detector": "banner_text", "weight": 0.35 },
+        { "detector": "feed_change", "weight": 0.15 },
+        { "detector": "banner_change", "weight": 0.15 }
+      ],
+      "threshold": 0.45,
+      "minSignals": 2,
+      "requireAny": ["feed_text", "banner_text"],
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 3,
+        "cooldownMs": 2000,
+        "minEventIntervalMs": 250
+      },
+      "rules": [
+        { "event": "headshot", "textPatterns": ["\\bheadshot\\b"] },
+        { "event": "enemy_down", "textPatterns": ["\\b(knocked|downed)\\b", "enemy\\s+down"] }
+      ]
+    }
+  ]
+}

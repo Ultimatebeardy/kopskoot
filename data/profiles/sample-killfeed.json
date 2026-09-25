@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "sample-killfeed",
+  "displayName": "Sample Kill Feed (test profile)",
+  "description": "Reference profile for the simulated kill feed in data/test-assets and tests/data. Top-right kill feed with a red kill icon and 'YOU ELIMINATED <name>' text.",
+  "version": "1",
+  "match": {
+    "processNames": ["KillSenseTestGame.exe"],
+    "windowTitleContains": ["KillSense Test"],
+    "sourceNameContains": ["KillSense Test"]
+  },
+  "reference": { "width": 1920, "height": 1080 },
+  "regions": [
+    {
+      "id": "killfeed",
+      "rect": { "x": 0.70, "y": 0.06, "w": 0.29, "h": 0.20 },
+      "description": "Top-right kill feed"
+    }
+  ],
+  "aspectOverrides": [
+    { "aspect": "21:9", "regions": { "killfeed": { "x": 0.76, "y": 0.06, "w": 0.23, "h": 0.20 } } }
+  ],
+  "detectors": [
+    {
+      "id": "kill_icon",
+      "type": "template",
+      "region": "killfeed",
+      "file": "templates/sample-kill-icon.png",
+      "threshold": 0.82,
+      "scales": [1.0],
+      "maxInstances": 6
+    },
+    {
+      "id": "kill_text",
+      "type": "ocr",
+      "region": "killfeed",
+      "keywords": ["YOU ELIMINATED", "ELIMINATED", "YOU KILLED"],
+      "patterns": ["\\byou\\s+(eliminated|killed)\\s+\\S+"],
+      "negativeWords": ["ELIMINATED BY", "YOU WERE ELIMINATED", "KILLED BY"],
+      "fuzzy": 0.8,
+      "upscale": 2.0,
+      "refreshMs": 1000
+    },
+    {
+      "id": "death_text",
+      "type": "ocr",
+      "region": "killfeed",
+      "keywords": ["YOU WERE ELIMINATED", "ELIMINATED BY"],
+      "fuzzy": 0.8,
+      "upscale": 2.0
+    },
+    {
+      "id": "kill_red",
+      "type": "color",
+      "region": "killfeed",
+      "hsv": { "hMin": 340, "hMax": 15, "sMin": 0.6, "vMin": 0.5 },
+      "minFraction": 0.002,
+      "maxFraction": 0.25
+    },
+    {
+      "id": "feed_change",
+      "type": "hud_change",
+      "region": "killfeed",
+      "threshold": 6,
+      "holdMs": 1200
+    }
+  ],
+  "targets": [
+    {
+      "id": "kill",
+      "event": "kill",
+      "signals": [
+        { "detector": "kill_icon", "weight": 0.45, "countInstances": true },
+        { "detector": "kill_text", "weight": 0.35 },
+        { "detector": "kill_red", "weight": 0.10 },
+        { "detector": "feed_change", "weight": 0.10 }
+      ],
+      "threshold": 0.75,
+      "minSignals": 2,
+      "requireAny": ["kill_icon", "kill_text"],
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 3,
+        "releaseRatio": 0.75,
+        "cooldownMs": 1500,
+        "minEventIntervalMs": 150,
+        "maxBurst": 4
+      },
+      "rules": [
+        { "event": "headshot", "textPatterns": ["headshot"] }
+      ]
+    },
+    {
+      "id": "death",
+      "event": "death",
+      "signals": [
+        { "detector": "death_text", "weight": 0.7 },
+        { "detector": "feed_change", "weight": 0.3 }
+      ],
+      "threshold": 0.7,
+      "minSignals": 1,
+      "requireAny": ["death_text"],
+      "temporal": { "confirmFrames": 2, "releaseFrames": 3, "cooldownMs": 3000 }
+    }
+  ]
+}
