@@ -7,6 +7,8 @@
 
 #include "killsense/user-template.hpp"
 
+#include <algorithm>
+
 #include <QHBoxLayout>
 #include <QImage>
 #include <QLabel>
