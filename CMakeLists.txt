@@ -1,92 +1,118 @@
-cmake_minimum_required(VERSION 3.28...3.30)
+# REALM KillSense - OBS-independent core library.
+#
+# Can be built on its own (no OBS needed) for unit tests and the replay tool:
+#   cmake -S core -B build_core
+#   cmake --build build_core --config Release
+#   ctest --test-dir build_core -C Release
+#
+# Or as part of the plugin build (root CMakeLists.txt adds this directory).
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
+cmake_minimum_required(VERSION 3.24...3.30)
 
-project(${_name} VERSION ${_version})
-
-# REALM KillSense needs the frontend API (dock, hotkeys, events) and Qt (UI).
-option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" ON)
-option(ENABLE_QT "Use Qt functionality" ON)
-option(KILLSENSE_BUILD_TESTS "Also build unit tests and the replay tool" OFF)
-option(KILLSENSE_ENABLE_WINDOWS_OCR "Use Windows.Media.Ocr (C++/WinRT) on Windows" ON)
-
-if(NOT ENABLE_FRONTEND_API OR NOT ENABLE_QT)
-  message(FATAL_ERROR "REALM KillSense requires ENABLE_FRONTEND_API=ON and ENABLE_QT=ON")
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(killsense-core VERSION 0.2.0 LANGUAGES C CXX)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(KILLSENSE_STANDALONE ON)
+  option(KILLSENSE_BUILD_TESTS "Build unit tests and the replay tool" ON)
+  option(KILLSENSE_ENABLE_WINDOWS_OCR "Use Windows.Media.Ocr (C++/WinRT) when building on Windows" ON)
+  if(MSVC)
+    add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus /EHsc)
+  else()
+    add_compile_options(-Wall -Wextra -Wno-unused-parameter)
+  endif()
+else()
+  set(KILLSENSE_STANDALONE OFF)
 endif()
 
-include(compilerconfig)
-include(defaults)
-include(helpers)
+set(KILLSENSE_REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
 
-# OBS-independent detection core (+ tests/replay tool when enabled).
-add_subdirectory(core)
+include(FetchContent)
 
-add_library(${CMAKE_PROJECT_NAME} MODULE)
-
-find_package(libobs REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
-
-find_package(obs-frontend-api REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)
-
-find_package(Qt6 COMPONENTS Widgets Core REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
-target_compile_options(
-  ${CMAKE_PROJECT_NAME}
-  PRIVATE $<$<C_COMPILER_ID:Clang,AppleClang>:-Wno-quoted-include-in-framework-header -Wno-comma>
-)
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON)
-
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE killsense::core)
-
-# Vendored obs-websocket-api.h takes precedence over any system copy.
-target_include_directories(
-  ${CMAKE_PROJECT_NAME}
-  BEFORE
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/obs-websocket-api" "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
-if(MSVC)
-  target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /EHsc)
-  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+# --- nlohmann/json (MIT) -------------------------------------------------------
+# Header-only JSON library used for profiles, configuration and events.
+# Uses an installed package if available, otherwise downloads the pinned release.
+find_package(nlohmann_json 3.11 QUIET)
+if(NOT nlohmann_json_FOUND)
+  FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  set(JSON_BuildTests OFF CACHE INTERNAL "")
+  set(JSON_Install OFF CACHE INTERNAL "")
+  FetchContent_MakeAvailable(nlohmann_json)
 endif()
+
+find_package(Threads REQUIRED)
+
+add_library(killsense-core STATIC)
+add_library(killsense::core ALIAS killsense-core)
 
 target_sources(
-  ${CMAKE_PROJECT_NAME}
+  killsense-core
   PRIVATE
-    src/plugin-main.cpp
-    src/controller.cpp
-    src/controller.hpp
-    src/obs/frame-sampler.cpp
-    src/obs/frame-sampler.hpp
-    src/obs/obs-raii.hpp
-    src/obs/obs-sources.cpp
-    src/obs/obs-sources.hpp
-    src/outputs/websocket-vendor-output.cpp
-    src/outputs/websocket-vendor-output.hpp
-    src/ui/capture-dialog.cpp
-    src/ui/capture-dialog.hpp
-    src/ui/debug-view.cpp
-    src/ui/debug-view.hpp
-    src/ui/killsense-dock.cpp
-    src/ui/killsense-dock.hpp
-    src/ui/profile-manager-dialog.cpp
-    src/ui/profile-manager-dialog.hpp
-    src/ui/settings-dialog.cpp
-    src/ui/settings-dialog.hpp
-    src/ui/ui-common.hpp
+    src/calibration.cpp
+    src/capture.cpp
+    src/config.cpp
+    src/engine.cpp
+    src/event-bus.cpp
+    src/event.cpp
+    src/fsutil.cpp
+    src/fusion.cpp
+    src/image.cpp
+    src/killfeed.cpp
+    src/user-template.cpp
+    src/logging.cpp
+    src/profile.cpp
+    src/replay.cpp
+    src/session.cpp
+    src/temporal.cpp
+    src/text-match.cpp
+    src/worker.cpp
+    src/detectors/basic-detectors.cpp
+    src/detectors/detectors.hpp
+    src/detectors/ocr-detector.cpp
+    src/detectors/template-detector.cpp
+    src/detectors/template-matcher.cpp
+    src/ocr/ocr-common.cpp
 )
 
-set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+target_include_directories(killsense-core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+# stb is private: only image.cpp includes it.
+target_include_directories(killsense-core SYSTEM PRIVATE "${KILLSENSE_REPO_ROOT}/third_party/stb")
+target_link_libraries(killsense-core PUBLIC nlohmann_json::nlohmann_json Threads::Threads)
+target_compile_features(killsense-core PUBLIC cxx_std_17)
+set_target_properties(killsense-core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# Developer tool: headless libobs integration test of the GPU capture path.
-option(KILLSENSE_BUILD_OBS_HARNESS "Build the headless libobs integration harness (developer tool)" OFF)
-if(KILLSENSE_BUILD_OBS_HARNESS)
-  add_executable(killsense-obs-harness tools/libobs-harness/main.cpp src/obs/frame-sampler.cpp)
-  target_include_directories(killsense-obs-harness PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  target_link_libraries(killsense-obs-harness PRIVATE OBS::libobs killsense::core)
-  if(UNIX AND NOT APPLE)
-    find_package(X11 REQUIRED)
-    target_link_libraries(killsense-obs-harness PRIVATE X11::X11)
+if(MSVC)
+  target_compile_options(killsense-core PRIVATE /EHsc)
+  target_compile_definitions(killsense-core PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+
+# --- Windows.Media.Ocr (built into Windows 10/11, no redistribution) ----------
+if(WIN32 AND KILLSENSE_ENABLE_WINDOWS_OCR)
+  include(CheckIncludeFileCXX)
+  set(CMAKE_REQUIRED_FLAGS "/std:c++17 /EHsc")
+  check_include_file_cxx("winrt/Windows.Media.Ocr.h" KILLSENSE_HAVE_CPPWINRT)
+  unset(CMAKE_REQUIRED_FLAGS)
+  if(KILLSENSE_HAVE_CPPWINRT)
+    target_sources(killsense-core PRIVATE src/ocr/windows-ocr-engine.cpp)
+    target_compile_definitions(killsense-core PUBLIC KILLSENSE_HAS_WINDOWS_OCR=1)
+    target_link_libraries(killsense-core PUBLIC WindowsApp)
+    message(STATUS "KillSense: Windows.Media.Ocr backend enabled")
+  else()
+    message(
+      WARNING
+      "KillSense: C++/WinRT headers (winrt/Windows.Media.Ocr.h) not found in the Windows SDK. "
+      "OCR detectors will be unavailable. Install Windows SDK 10.0.20348+ or set KILLSENSE_ENABLE_WINDOWS_OCR=OFF."
+    )
   endif()
+endif()
+
+if(KILLSENSE_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory("${KILLSENSE_REPO_ROOT}/tools/replay" "${CMAKE_CURRENT_BINARY_DIR}/tools/replay")
+  add_subdirectory("${KILLSENSE_REPO_ROOT}/tests" "${CMAKE_CURRENT_BINARY_DIR}/tests")
 endif()

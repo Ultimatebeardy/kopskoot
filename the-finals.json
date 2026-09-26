@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "id": "the-finals",
+  "displayName": "THE FINALS (v6)",
+  "description": "THE FINALS, works for any player: set your gamertag in REALM KillSense Settings and press 'Capture my name plate' once in a match. Kill = centre 'ELIMINATED <name>' banner AND proof it is you playing (your name plate bottom-left, or your gamertag as the killer in the top-right kill feed). Nothing counts while the red 'RESPAWN / PREV / NEXT' bar is on screen (dead or spectating). Deaths come from the respawn bar and from the kill feed (your name on the right). Built from 1920x1080 screenshots, default HUD scale.",
+  "version": "6",
+  "match": {
+    "processNames": [
+      "Discovery.exe"
+    ],
+    "windowTitleContains": [
+      "THE FINALS"
+    ],
+    "sourceNameContains": [
+      "Finals"
+    ]
+  },
+  "reference": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "id": "elim_banner",
+      "rect": {
+        "x": 0.3,
+        "y": 0.645,
+        "w": 0.4,
+        "h": 0.12
+      },
+      "description": "Centre 'ELIMINATED <NAME> $100 / ELIMINATION 250' banner"
+    },
+    {
+      "id": "respawn_bar",
+      "rect": {
+        "x": 0.3,
+        "y": 0.925,
+        "w": 0.4,
+        "h": 0.07
+      },
+      "description": "Bottom red 'RESPAWN AVAILABLE IN n' bar (you are dead)"
+    },
+    {
+      "id": "own_nameplate",
+      "rect": {
+        "x": 0.02,
+        "y": 0.89,
+        "w": 0.13,
+        "h": 0.065
+      },
+      "description": "Bottom-left player name plate (shows YOUR name only when you are the one playing)"
+    },
+    {
+      "id": "spectate_bar",
+      "rect": {
+        "x": 0.0,
+        "y": 0.925,
+        "w": 1.0,
+        "h": 0.075
+      },
+      "description": "Full-width bottom bar shown while dead / spectating ('CHANGE LOADOUT ... RESPAWN ... PREV / NEXT')"
+    },
+    {
+      "id": "killfeed",
+      "rect": {
+        "x": 0.74,
+        "y": 0.02,
+        "w": 0.25,
+        "h": 0.16
+      },
+      "description": "Top-right kill feed 'KILLER > VICTIM' (your name on the left = your kill, on the right = your death)"
+    }
+  ],
+  "detectors": [
+    {
+      "id": "elim_word",
+      "type": "template",
+      "region": "elim_banner",
+      "file": "templates/the-finals-eliminated.png",
+      "threshold": 0.8,
+      "scales": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "maxInstances": 2
+    },
+    {
+      "id": "elim_text",
+      "type": "ocr",
+      "region": "elim_banner",
+      "keywords": [
+        "ELIMINATED"
+      ],
+      "patterns": [
+        "\\beliminated\\b"
+      ],
+      "negativeWords": [
+        "ASSIST",
+        "ELIMINATED BY",
+        "RESPAWN"
+      ],
+      "fuzzy": 0.8,
+      "upscale": 1.5,
+      "refreshMs": 800
+    },
+    {
+      "id": "assist_text",
+      "type": "ocr",
+      "region": "elim_banner",
+      "keywords": [
+        "ASSIST"
+      ],
+      "negativeWords": [
+        "ELIMINATED"
+      ],
+      "fuzzy": 0.8,
+      "upscale": 1.5,
+      "refreshMs": 800
+    },
+    {
+      "id": "elim_red_name",
+      "type": "color",
+      "region": "elim_banner",
+      "hsv": {
+        "hMin": 345,
+        "hMax": 10,
+        "sMin": 0.6,
+        "vMin": 0.55
+      },
+      "minFraction": 0.003,
+      "maxFraction": 0.12
+    },
+    {
+      "id": "elim_change",
+      "type": "hud_change",
+      "region": "elim_banner",
+      "threshold": 8,
+      "holdMs": 1500
+    },
+    {
+      "id": "respawn_text",
+      "type": "ocr",
+      "region": "respawn_bar",
+      "keywords": [
+        "RESPAWN AVAILABLE",
+        "RESPAWN"
+      ],
+      "fuzzy": 0.8,
+      "upscale": 1.0,
+      "refreshMs": 1000
+    },
+    {
+      "id": "respawn_red_bar",
+      "type": "color",
+      "region": "respawn_bar",
+      "hsv": {
+        "hMin": 340,
+        "hMax": 12,
+        "sMin": 0.55,
+        "vMin": 0.45
+      },
+      "minFraction": 0.45,
+      "maxFraction": 1.0
+    },
+    {
+      "id": "own_name_img",
+      "type": "template",
+      "region": "own_nameplate",
+      "userTemplate": "own-name-plate",
+      "threshold": 0.8,
+      "scales": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "maxInstances": 1,
+      "_comment": "Your own name plate image. Captured per user with the dock button 'Capture my name plate'."
+    },
+    {
+      "id": "own_name_text",
+      "type": "ocr",
+      "region": "own_nameplate",
+      "keywords": [
+        "{gamertag}"
+      ],
+      "fuzzy": 0.75,
+      "upscale": 2.0,
+      "refreshMs": 2000
+    },
+    {
+      "id": "feed_kill",
+      "type": "ocr",
+      "region": "killfeed",
+      "keywords": [
+        "{gamertag}"
+      ],
+      "role": "actor",
+      "fuzzy": 0.75,
+      "upscale": 2.0,
+      "refreshMs": 500
+    },
+    {
+      "id": "feed_death",
+      "type": "ocr",
+      "region": "killfeed",
+      "keywords": [
+        "{gamertag}"
+      ],
+      "role": "victim",
+      "fuzzy": 0.75,
+      "upscale": 2.0,
+      "refreshMs": 500
+    },
+    {
+      "id": "spectate_text",
+      "type": "ocr",
+      "region": "spectate_bar",
+      "keywords": [
+        "RESPAWN",
+        "SPECTATING"
+      ],
+      "negativeWords": [
+        "RESPAWN",
+        "CHANGE LOADOUT",
+        "PREV",
+        "NEXT",
+        "SPECTATING"
+      ],
+      "fuzzy": 0.8,
+      "upscale": 1.0,
+      "refreshMs": 700
+    },
+    {
+      "id": "dead_bar",
+      "type": "color",
+      "region": "spectate_bar",
+      "hsv": {
+        "hMin": 340,
+        "hMax": 12,
+        "sMin": 0.55,
+        "vMin": 0.45
+      },
+      "minFraction": 0.5,
+      "maxFraction": 1.0,
+      "vetoWhenActive": true,
+      "_comment": "Full-width red bar at the bottom = you are dead or spectating. Blocks kills and assists."
+    }
+  ],
+  "targets": [
+    {
+      "id": "kill",
+      "event": "kill",
+      "signals": [
+        {
+          "detector": "elim_word",
+          "weight": 0.3
+        },
+        {
+          "detector": "own_name_img",
+          "weight": 0.2
+        },
+        {
+          "detector": "feed_kill",
+          "weight": 0.2
+        },
+        {
+          "detector": "own_name_text",
+          "weight": 0.1
+        },
+        {
+          "detector": "elim_text",
+          "weight": 0.1
+        },
+        {
+          "detector": "elim_red_name",
+          "weight": 0.05
+        },
+        {
+          "detector": "elim_change",
+          "weight": 0.05
+        },
+        {
+          "detector": "dead_bar",
+          "weight": 0.0
+        },
+        {
+          "detector": "spectate_text",
+          "weight": 0.0
+        }
+      ],
+      "threshold": 0.55,
+      "minSignals": 3,
+      "requireAny": [
+        "own_name_img",
+        "own_name_text",
+        "feed_kill"
+      ],
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 3,
+        "cooldownMs": 2000,
+        "minEventIntervalMs": 200,
+        "textSimilarity": 0.5
+      },
+      "requireAll": [
+        "elim_word"
+      ]
+    },
+    {
+      "id": "assist",
+      "event": "assist",
+      "signals": [
+        {
+          "detector": "assist_text",
+          "weight": 0.5
+        },
+        {
+          "detector": "own_name_img",
+          "weight": 0.3
+        },
+        {
+          "detector": "own_name_text",
+          "weight": 0.1
+        },
+        {
+          "detector": "elim_change",
+          "weight": 0.1
+        },
+        {
+          "detector": "dead_bar",
+          "weight": 0.0
+        },
+        {
+          "detector": "spectate_text",
+          "weight": 0.0
+        }
+      ],
+      "threshold": 0.6,
+      "minSignals": 2,
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 3,
+        "cooldownMs": 2000,
+        "minEventIntervalMs": 200,
+        "textSimilarity": 0.5
+      },
+      "requireAll": [
+        "assist_text"
+      ],
+      "requireAny": [
+        "own_name_img",
+        "own_name_text"
+      ]
+    },
+    {
+      "id": "death",
+      "event": "death",
+      "signals": [
+        {
+          "detector": "respawn_text",
+          "weight": 0.5
+        },
+        {
+          "detector": "respawn_red_bar",
+          "weight": 0.3
+        },
+        {
+          "detector": "feed_death",
+          "weight": 0.2
+        }
+      ],
+      "threshold": 0.6,
+      "minSignals": 2,
+      "requireAny": [
+        "respawn_text",
+        "feed_death"
+      ],
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 4,
+        "cooldownMs": 5000,
+        "textSimilarity": 0.0
+      }
+    }
+  ]
+}
