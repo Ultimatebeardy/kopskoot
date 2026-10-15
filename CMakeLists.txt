@@ -4,14 +4,14 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCO
 
 project(${_name} VERSION ${_version})
 
-# REALM KillSense needs the frontend API (dock, hotkeys, events) and Qt (UI).
+# KopSkoot needs the frontend API (dock, hotkeys, events) and Qt (UI).
 option(ENABLE_FRONTEND_API "Use obs-frontend-api for UI functionality" ON)
 option(ENABLE_QT "Use Qt functionality" ON)
 option(KILLSENSE_BUILD_TESTS "Also build unit tests and the replay tool" OFF)
 option(KILLSENSE_ENABLE_WINDOWS_OCR "Use Windows.Media.Ocr (C++/WinRT) on Windows" ON)
 
 if(NOT ENABLE_FRONTEND_API OR NOT ENABLE_QT)
-  message(FATAL_ERROR "REALM KillSense requires ENABLE_FRONTEND_API=ON and ENABLE_QT=ON")
+  message(FATAL_ERROR "KopSkoot requires ENABLE_FRONTEND_API=ON and ENABLE_QT=ON")
 endif()
 
 include(compilerconfig)

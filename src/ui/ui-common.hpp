@@ -1,4 +1,4 @@
-// REALM KillSense - shared Qt UI helpers.
+// KopSkoot - shared Qt UI helpers.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 

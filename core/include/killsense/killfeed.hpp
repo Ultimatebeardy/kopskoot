@@ -1,4 +1,4 @@
-// REALM KillSense - kill-feed name/role matching.
+// KopSkoot - kill-feed name/role matching.
 // Given OCR lines of a kill feed ("KILLER [icon] > VICTIM"), finds a player
 // name (typically the user's gamertag) and decides whether that player is the
 // actor (killer: another name follows on the same line) or the victim (the

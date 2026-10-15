@@ -1,4 +1,4 @@
-// REALM KillSense - obs-websocket (v5) vendor integration.
+// KopSkoot - obs-websocket (v5) vendor integration.
 //
 // Vendor name: "RealmKillSense". Events are emitted as obs-websocket
 // VendorEvent messages (eventType = "Kill", "Death", "Headshot", ...,
@@ -53,6 +53,8 @@ public:
 	const char *name() const override { return "obs-websocket-vendor"; }
 	bool enabled() const override { return enabled_.load() && available(); }
 	void deliver(const KillEvent &ev) override;
+	// Emits a non-kill vendor event (e.g. "OverlaySettings") with a JSON object.
+	void emitCustom(const char *eventType, const std::string &json);
 
 private:
 	friend struct VendorCallbacks;

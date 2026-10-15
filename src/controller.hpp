@@ -1,4 +1,4 @@
-// REALM KillSense - plugin controller.
+// KopSkoot - plugin controller.
 //
 // Owns every runtime component and defines thread ownership:
 //   UI thread (Qt dock)         -> Controller public API
@@ -46,6 +46,7 @@ struct ControllerSnapshot {
 	bool debugEnabled = false;
 	std::string gpuState;
 	std::string gamertag;
+	bool overlayPopups = true;
 	// Non-empty when the active profile needs player setup (gamertag or a
 	// captured name plate) before it can count YOUR kills.
 	std::string setupHint;
@@ -98,6 +99,8 @@ public:
 	std::filesystem::path userTemplatesDir() const { return userTemplatesDir_; }
 	// Pushes the current counters to the configured OBS text source (any thread).
 	void refreshCounterSource();
+	// Overlay pop-up text on/off: saved and broadcast to overlays live.
+	void setOverlayPopups(bool enabled);
 
 	// ---- debug ----
 	void setDebugEnabled(bool enabled);

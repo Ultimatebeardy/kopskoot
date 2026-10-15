@@ -7,6 +7,8 @@
 #include "settings-dialog.hpp"
 #include "ui-common.hpp"
 
+#include <obs-module.h>
+
 #include "../controller.hpp"
 
 #include <QAbstractItemView>
@@ -16,7 +18,10 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPixmap>
 #include <QPushButton>
+#include <QSignalBlocker>
+#include <QCheckBox>
 #include <QScrollArea>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -38,6 +43,39 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	  controller_(controller)
 {
 	setObjectName(QStringLiteral("RealmKillSenseDock"));
+	// KopSkoot look: black panels, red accents, silver text. Scoped to this
+	// dock only - the rest of OBS keeps the user's own theme.
+	setAttribute(Qt::WA_StyledBackground, true);
+	setStyleSheet(QStringLiteral(
+		"#RealmKillSenseDock, #RealmKillSenseDock QScrollArea, #RealmKillSenseDock QScrollArea > QWidget > QWidget"
+		" { background: #0b0b0d; color: #e6e6e6; }"
+		"#RealmKillSenseDock QGroupBox { background: #121214; border: 1px solid #3a0d10; border-left: 3px solid #d7141e;"
+		" border-radius: 6px; margin-top: 14px; padding: 8px 6px 6px 6px; font-weight: bold; }"
+		"#RealmKillSenseDock QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; color: #ff3b3b;"
+		" text-transform: uppercase; }"
+		"#RealmKillSenseDock QLabel { color: #e6e6e6; background: transparent; }"
+		"#RealmKillSenseDock QPushButton { background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #2a2a2e, stop:1 #141416);"
+		" color: #f2f2f2; border: 1px solid #4a4a50; border-radius: 4px; padding: 5px 10px; }"
+		"#RealmKillSenseDock QPushButton:hover { border-color: #ff2a2a; color: #ffffff; }"
+		"#RealmKillSenseDock QPushButton:pressed { background: #7a0a10; }"
+		"#RealmKillSenseDock QPushButton:disabled { color: #6a6a6a; border-color: #2a2a2e; }"
+		"#RealmKillSenseDock QComboBox { background: #19191c; color: #f2f2f2; border: 1px solid #4a4a50;"
+		" border-radius: 4px; padding: 4px 8px; }"
+		"#RealmKillSenseDock QComboBox:hover { border-color: #ff2a2a; }"
+		"#RealmKillSenseDock QComboBox QAbstractItemView { background: #121214; color: #f2f2f2;"
+		" selection-background-color: #b3121a; }"
+		"#RealmKillSenseDock QCheckBox { color: #e6e6e6; background: transparent; }"
+		"#RealmKillSenseDock QCheckBox::indicator { width: 14px; height: 14px; border: 1px solid #6a6a70;"
+		" background: #19191c; border-radius: 3px; }"
+		"#RealmKillSenseDock QCheckBox::indicator:checked { background: #d7141e; border-color: #ff3b3b; }"
+		"#RealmKillSenseDock QPushButton#ksStart { background: qlineargradient(x1:0,y1:0,x2:0,y2:1, stop:0 #e0202a,"
+		" stop:1 #8a0a10); border: 1px solid #ff4a4a; font-weight: bold; }"
+		"#RealmKillSenseDock QPushButton#ksStart:hover { background: #ff2a33; }"
+		"#RealmKillSenseDock QLabel#ksBig { color: #ff3b3b; font-size: 18px; font-weight: bold; }"
+		"#RealmKillSenseDock QScrollBar:vertical { background: #0b0b0d; width: 10px; }"
+		"#RealmKillSenseDock QScrollBar::handle:vertical { background: #3a0d10; border-radius: 4px; min-height: 30px; }"
+		"#RealmKillSenseDock QScrollBar::handle:vertical:hover { background: #d7141e; }"
+		"#RealmKillSenseDock QScrollBar::add-line, #RealmKillSenseDock QScrollBar::sub-line { height: 0; }"));
 	auto *outer = new QVBoxLayout(this);
 	outer->setContentsMargins(0, 0, 0, 0);
 	auto *scroll = new QScrollArea(this);
@@ -47,6 +85,19 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	auto *root = new QVBoxLayout(content);
 	scroll->setWidget(content);
 	outer->addWidget(scroll);
+
+	// --- Brand logo (data/images/kopskoot-dock.png) ---
+	if (char *logoPath = obs_module_file("images/kopskoot-dock.png")) {
+		QPixmap logo(QString::fromUtf8(logoPath));
+		bfree(logoPath);
+		if (!logo.isNull()) {
+			auto *logoLabel = new QLabel(content);
+			logoLabel->setAlignment(Qt::AlignCenter);
+			logoLabel->setPixmap(logo.scaledToWidth(300, Qt::SmoothTransformation));
+			logoLabel->setToolTip(QStringLiteral("KopSkoot by Ultimate Beardy"));
+			root->addWidget(logoLabel);
+		}
+	}
 
 	// --- Source ---
 	auto *sourceBox = new QGroupBox(T("KillSense.Source"), content);
@@ -98,12 +149,20 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	// --- Main controls ---
 	auto *controls = new QHBoxLayout();
 	startStop_ = new QPushButton(T("KillSense.Start"), content);
+	startStop_->setObjectName(QStringLiteral("ksStart"));
 	auto *testKill = new QPushButton(T("KillSense.TestKill"), content);
 	auto *reset = new QPushButton(T("KillSense.ResetSession"), content);
 	controls->addWidget(startStop_);
 	controls->addWidget(testKill);
 	controls->addWidget(reset);
 	root->addLayout(controls);
+	overlayPopups_ = new QCheckBox(T("KillSense.Overlay.Popups"), content);
+	overlayPopups_->setToolTip(T("KillSense.Overlay.Popups.Tooltip"));
+	root->addWidget(overlayPopups_);
+	connect(overlayPopups_, &QCheckBox::toggled, this, [this](bool on) {
+		if (auto c = this->controller())
+			c->setOverlayPopups(on);
+	});
 
 	// --- Status ---
 	auto *statusBox = new QGroupBox(T("KillSense.Status"), content);
@@ -113,8 +172,10 @@ KillSenseDock::KillSenseDock(std::shared_ptr<Controller> controller, QWidget *pa
 	profile_ = valueLabel(statusBox);
 	state_ = valueLabel(statusBox);
 	kills_ = valueLabel(statusBox);
+	kills_->setObjectName(QStringLiteral("ksBig"));
 	streak_ = valueLabel(statusBox);
 	deaths_ = valueLabel(statusBox);
+	deaths_->setObjectName(QStringLiteral("ksBig"));
 	kd_ = valueLabel(statusBox);
 	lastEvent_ = valueLabel(statusBox);
 	lastConfidence_ = valueLabel(statusBox);
@@ -417,6 +478,10 @@ void KillSenseDock::refreshStatus()
 					      : T("KillSense.Player.Gamertag").arg(Q(s.gamertag)));
 	setupHint_->setText(Q(s.setupHint));
 	setupHint_->setVisible(!s.setupHint.empty());
+	if (overlayPopups_->isChecked() != s.overlayPopups) {
+		const QSignalBlocker block(overlayPopups_);
+		overlayPopups_->setChecked(s.overlayPopups);
+	}
 	if (s.session.lastEvent) {
 		const auto &ev = *s.session.lastEvent;
 		const QString when =

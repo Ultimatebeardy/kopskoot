@@ -1,4 +1,4 @@
-// REALM KillSense - detection engine (single-threaded; owned by the worker).
+// KopSkoot - detection engine (single-threaded; owned by the worker).
 // Pipeline per frame:
 //   regions -> preprocessing (gray + dHash) -> detectors -> evidence fusion
 //   -> temporal confirmation / duplicate suppression -> event type rules

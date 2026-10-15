@@ -1,4 +1,4 @@
-// REALM KillSense - normalized / pixel rectangle helpers.
+// KopSkoot - normalized / pixel rectangle helpers.
 // Profiles store regions as normalized coordinates (0..1 of the source frame)
 // so they stay resolution independent.
 // SPDX-License-Identifier: GPL-2.0-or-later

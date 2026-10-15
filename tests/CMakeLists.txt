@@ -1,4 +1,4 @@
-# REALM KillSense unit tests (GoogleTest, BSD-3-Clause, fetched at configure time).
+# KopSkoot unit tests (GoogleTest, BSD-3-Clause, fetched at configure time).
 include(FetchContent)
 FetchContent_Declare(
   googletest

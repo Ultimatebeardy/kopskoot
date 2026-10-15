@@ -1,4 +1,4 @@
-// REALM KillSense - Profile Manager: lists loaded profiles and load errors,
+// KopSkoot - Profile Manager: lists loaded profiles and load errors,
 // reloads profiles from disk and opens the profile folders.
 // (Profile editing inside OBS is planned together with Learn This Game.)
 // SPDX-License-Identifier: GPL-2.0-or-later

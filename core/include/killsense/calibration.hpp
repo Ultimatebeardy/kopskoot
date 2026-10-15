@@ -1,4 +1,4 @@
-// REALM KillSense - "Learn This Game" calibration core.
+// KopSkoot - "Learn This Game" calibration core.
 //
 // Status: core logic implemented and unit-tested (Milestone 1).
 // OBS integration (full-frame low-res sampling, hotkey, candidate review UI,

@@ -1,4 +1,4 @@
-// REALM KillSense - offline replay of recorded screenshots / image sequences.
+// KopSkoot - offline replay of recorded screenshots / image sequences.
 // Runs the exact capture planning + detection pipeline used inside OBS, but
 // synchronously and deterministically, so detection logic can be tested
 // without OBS or a game.

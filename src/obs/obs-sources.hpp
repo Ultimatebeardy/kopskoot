@@ -1,4 +1,4 @@
-// REALM KillSense - OBS source enumeration and non-invasive game identification.
+// KopSkoot - OBS source enumeration and non-invasive game identification.
 // Game identification only reads OBS's OWN capture-source settings (the window
 // a Game/Window Capture source was configured for). No process inspection,
 // memory reading or injection of any kind.

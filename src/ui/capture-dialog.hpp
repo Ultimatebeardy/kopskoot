@@ -1,4 +1,4 @@
-// REALM KillSense - "Capture my name plate" dialog.
+// KopSkoot - "Capture my name plate" dialog.
 // Grabs the profile's name-plate region from the live analysis frames, cuts
 // out the player's own name and stores it as a per-user template.
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -39,6 +39,7 @@ private:
 	std::string regionId_;
 	QLabel *info_ = nullptr;
 	QLabel *preview_ = nullptr;
+	QLabel *regionPreview_ = nullptr;
 	QLabel *message_ = nullptr;
 	QPushButton *retry_ = nullptr;
 	QPushButton *save_ = nullptr;

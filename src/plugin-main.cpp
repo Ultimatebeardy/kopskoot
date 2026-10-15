@@ -1,5 +1,5 @@
 /*
-REALM KillSense - OBS Studio plugin entry point.
+KopSkoot - OBS Studio plugin entry point.
 Copyright (C) 2026 Ultimate Beardy / The Realm
 
 This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 MODULE_EXPORT const char *obs_module_description(void)
 {
-	return "REALM KillSense: local, vision-based kill detection for stream automation.";
+	return "KopSkoot: local, vision-based kill detection for stream automation.";
 }
 
 namespace {

@@ -1,4 +1,4 @@
-// REALM KillSense - capture planning and frame packets.
+// KopSkoot - capture planning and frame packets.
 // The OBS frame sampler and the replay tool both use planCaptures() so the
 // detector sees identical region images in OBS and in offline tests.
 // SPDX-License-Identifier: GPL-2.0-or-later

@@ -1,4 +1,4 @@
-// REALM KillSense - internal event bus.
+// KopSkoot - internal event bus.
 // publish() never blocks the caller: events are queued (bounded) and delivered
 // to subscribers on a dedicated dispatch thread, so a slow output (network,
 // disk) can never stall detection or OBS.

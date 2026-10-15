@@ -1,4 +1,4 @@
-// REALM KillSense - session counters (kills, streak, deaths). Thread-safe.
+// KopSkoot - session counters (kills, streak, deaths). Thread-safe.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 

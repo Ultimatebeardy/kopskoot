@@ -136,6 +136,7 @@ Every file in the repository and its purpose. Keep this updated when files are a
 | `data/locale/en-US.ini` | English UI strings |
 | `data/profiles/generic.json` | Generic fallback profile |
 | `data/profiles/sample-killfeed.json` | Reference/test profile |
+| `data/profiles/wows-legends.json` | World of Warships: Legends profile (DESTROYED ribbon) |
 | `data/profiles/the-finals.json` | THE FINALS profile (gamertag + name plate + kill feed) |
 | `data/templates/sample-kill-icon.png` | Template for the sample profile |
 | `data/templates/the-finals-eliminated.png` | THE FINALS "ELIMINATED" banner word |

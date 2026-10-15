@@ -1,4 +1,4 @@
-// REALM KillSense - small RAII helpers for libobs reference-counted objects.
+// KopSkoot - small RAII helpers for libobs reference-counted objects.
 // Every obs_*_get_*/create call that returns a reference is wrapped so it is
 // released on every code path (including exceptions).
 // SPDX-License-Identifier: GPL-2.0-or-later

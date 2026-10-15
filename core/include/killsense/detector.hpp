@@ -1,4 +1,4 @@
-// REALM KillSense - detector module interface.
+// KopSkoot - detector module interface.
 // Every detector turns one captured region into a single evidence signal.
 // New detector kinds are added by implementing IDetector and registering the
 // kind in createDetector() (core/src/detectors/detector-factory.cpp).

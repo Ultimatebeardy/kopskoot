@@ -1,4 +1,4 @@
-// REALM KillSense - main OBS dock ("REALM KillSense").
+// KopSkoot - main OBS dock ("KopSkoot").
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
@@ -7,6 +7,7 @@
 
 #include <memory>
 
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QPushButton;
@@ -58,6 +59,7 @@ private:
 	QLabel *gamertag_ = nullptr;
 	QLabel *setupHint_ = nullptr;
 	QPushButton *capture_ = nullptr;
+	QCheckBox *overlayPopups_ = nullptr;
 	QLabel *lastEvent_ = nullptr;
 	QLabel *lastConfidence_ = nullptr;
 	QLabel *fps_ = nullptr;

@@ -1,4 +1,4 @@
-// REALM KillSense - UTF-8 aware filesystem helpers.
+// KopSkoot - UTF-8 aware filesystem helpers.
 // OBS hands out UTF-8 paths. On Windows std::string paths would otherwise be
 // interpreted in the ANSI code page, so every file access goes through here.
 // SPDX-License-Identifier: GPL-2.0-or-later

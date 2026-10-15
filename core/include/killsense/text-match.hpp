@@ -1,4 +1,4 @@
-// REALM KillSense - OCR-tolerant text matching helpers.
+// KopSkoot - OCR-tolerant text matching helpers.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 

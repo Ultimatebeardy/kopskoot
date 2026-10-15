@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "the-finals",
-  "displayName": "THE FINALS (v6)",
-  "description": "THE FINALS, works for any player: set your gamertag in REALM KillSense Settings and press 'Capture my name plate' once in a match. Kill = centre 'ELIMINATED <name>' banner AND proof it is you playing (your name plate bottom-left, or your gamertag as the killer in the top-right kill feed). Nothing counts while the red 'RESPAWN / PREV / NEXT' bar is on screen (dead or spectating). Deaths come from the respawn bar and from the kill feed (your name on the right). Built from 1920x1080 screenshots, default HUD scale.",
-  "version": "6",
+  "displayName": "THE FINALS (v7)",
+  "description": "THE FINALS, works for any player: set your gamertag in KopSkoot Settings and press 'Capture my name plate' once in a match. Kill = centre 'ELIMINATED <name>' banner AND proof it is you playing (your name plate bottom-left, or your gamertag as the killer in the top-right kill feed). Nothing counts while the red 'RESPAWN / PREV / NEXT' bar is on screen (dead or spectating). Deaths come from the respawn bar and from the kill feed (your name on the right). Built from 1920x1080 screenshots, default HUD scale. v7: one banner = one kill (OCR noise and banner flicker no longer split it), deaths at most once per 15 s.",
+  "version": "7",
   "match": {
     "processNames": [
       "Discovery.exe"
@@ -297,11 +297,12 @@
         "feed_kill"
       ],
       "temporal": {
-        "confirmFrames": 2,
-        "releaseFrames": 3,
-        "cooldownMs": 2000,
-        "minEventIntervalMs": 200,
-        "textSimilarity": 0.5
+        "confirmFrames": 3,
+        "releaseFrames": 6,
+        "cooldownMs": 3000,
+        "minEventIntervalMs": 2000,
+        "textSimilarity": 0.0,
+        "_comment": "Text changes are ignored (OCR reads the animated banner differently every frame); a new kill needs the banner to go away and come back, at least 2 s apart."
       },
       "requireAll": [
         "elim_word"
@@ -339,11 +340,12 @@
       "threshold": 0.6,
       "minSignals": 2,
       "temporal": {
-        "confirmFrames": 2,
-        "releaseFrames": 3,
-        "cooldownMs": 2000,
-        "minEventIntervalMs": 200,
-        "textSimilarity": 0.5
+        "confirmFrames": 3,
+        "releaseFrames": 6,
+        "cooldownMs": 3000,
+        "minEventIntervalMs": 2000,
+        "textSimilarity": 0.0,
+        "_comment": "Text changes are ignored (OCR reads the animated banner differently every frame); a new kill needs the banner to go away and come back, at least 2 s apart."
       },
       "requireAll": [
         "assist_text"
@@ -377,9 +379,10 @@
         "feed_death"
       ],
       "temporal": {
-        "confirmFrames": 2,
-        "releaseFrames": 4,
-        "cooldownMs": 5000,
+        "confirmFrames": 3,
+        "releaseFrames": 15,
+        "cooldownMs": 15000,
+        "minEventIntervalMs": 15000,
         "textSimilarity": 0.0
       }
     }

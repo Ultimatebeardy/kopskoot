@@ -1,4 +1,4 @@
-// REALM KillSense - analysis worker thread and bounded frame queue.
+// KopSkoot - analysis worker thread and bounded frame queue.
 //
 // Thread ownership:
 //   * The OBS graphics thread (FrameSampler) produces FramePackets.

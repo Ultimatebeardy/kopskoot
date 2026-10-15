@@ -1,4 +1,4 @@
-// REALM KillSense - temporal confirmation and duplicate suppression.
+// KopSkoot - temporal confirmation and duplicate suppression.
 //
 // A kill message usually stays on screen for seconds. The tracker turns a
 // stream of per-frame fusion results into discrete events:

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "wows-legends",
+  "displayName": "World of Warships: Legends (v1.1)",
+  "description": "World of Warships: Legends (console, 1920x1080, default HUD). Kill = the red 'DESTROYED' ribbon with the sinking-ship icon that appears in the ribbon stack on the right. Ribbons are only shown for YOUR own actions, so no gamertag is needed. 'ASSISTED' (fist icon) and other ribbons are ignored. Deaths: planned (needs a screenshot of the 'your ship was destroyed' screen).",
+  "version": "1.1",
+  "match": {
+    "sourceNameContains": [
+      "Legends",
+      "Warships",
+      "WOWS"
+    ]
+  },
+  "reference": {
+    "width": 1920,
+    "height": 1080
+  },
+  "regions": [
+    {
+      "id": "ribbons",
+      "rect": {
+        "x": 0.8,
+        "y": 0.2,
+        "w": 0.185,
+        "h": 0.34
+      },
+      "description": "Right-hand ribbon stack (TARGET HIT / ASSISTED / DESTROYED ...); ribbons move up and down as they stack"
+    }
+  ],
+  "detectors": [
+    {
+      "id": "destroyed_icon",
+      "type": "template",
+      "region": "ribbons",
+      "file": "templates/wows-legends-destroyed.png",
+      "threshold": 0.8,
+      "scales": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "maxInstances": 1,
+      "_comment": "Sinking-ship icon on the red ribbon (the 'xN' count is left out on purpose)."
+    },
+    {
+      "id": "destroyed_text",
+      "type": "ocr",
+      "region": "ribbons",
+      "keywords": [
+        "DESTROYED"
+      ],
+      "fuzzy": 0.8,
+      "upscale": 2.0,
+      "refreshMs": 800
+    },
+    {
+      "id": "red_ribbon",
+      "type": "color",
+      "region": "ribbons",
+      "hsv": {
+        "hMin": 0,
+        "hMax": 18,
+        "sMin": 0.65,
+        "vMin": 0.45
+      },
+      "minFraction": 0.03,
+      "maxFraction": 0.6
+    },
+    {
+      "id": "ribbon_change",
+      "type": "hud_change",
+      "region": "ribbons",
+      "threshold": 6,
+      "holdMs": 1500
+    }
+  ],
+  "targets": [
+    {
+      "id": "kill",
+      "event": "kill",
+      "signals": [
+        {
+          "detector": "destroyed_icon",
+          "weight": 0.6
+        },
+        {
+          "detector": "destroyed_text",
+          "weight": 0.2
+        },
+        {
+          "detector": "red_ribbon",
+          "weight": 0.1
+        },
+        {
+          "detector": "ribbon_change",
+          "weight": 0.1
+        }
+      ],
+      "threshold": 0.5,
+      "minSignals": 2,
+      "requireAll": [
+        "destroyed_icon"
+      ],
+      "temporal": {
+        "confirmFrames": 2,
+        "releaseFrames": 3,
+        "cooldownMs": 2500,
+        "minEventIntervalMs": 300,
+        "textSimilarity": 0.0,
+        "_comment": "textSimilarity 0: other ribbons' counters (TARGET HIT x5 -> x6) must not look like a new kill."
+      }
+    }
+  ]
+}

@@ -1,4 +1,8 @@
-# REALM KillSense
+<p align="center"><img src="docs/images/kopskoot-banner.png" alt="KopSkoot" width="600"></p>
+
+# KopSkoot
+
+*by Ultimate Beardy. Formerly "REALM KillSense". "Kop skoot" is Afrikaans for headshot.*
 
 A native OBS Studio plugin that detects kills in your gameplay from the video OBS already captures, then turns them into stream events: obs-websocket vendor events (Streamer.bot and similar), a JSON Lines file, and an internal event bus. It runs locally and never touches the game: no memory reading, no injection, no network interception, no uploads.
 
@@ -27,7 +31,7 @@ cmake --preset windows-x64
 cmake --build --preset windows-x64
 cmake --install build_x64 --config RelWithDebInfo     # elevated prompt
 ```
-Restart OBS, open **Docks → REALM KillSense**, then follow the acceptance test in `docs/TESTING.md` §4.
+Restart OBS, open **Docks → KopSkoot**, then follow the acceptance test in `docs/TESTING.md` §4.
 
 ## Documentation
 | Doc | Contents |

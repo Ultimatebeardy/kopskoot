@@ -1,4 +1,4 @@
-// REALM KillSense - built-in detector implementations (internal header).
+// KopSkoot - built-in detector implementations (internal header).
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 

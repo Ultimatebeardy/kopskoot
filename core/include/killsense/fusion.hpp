@@ -1,4 +1,4 @@
-// REALM KillSense - evidence fusion.
+// KopSkoot - evidence fusion.
 // Combines detector signals into one confidence per target:
 //   confidence = sum(weight_i * score_i) / sum(weight_i)   over AVAILABLE signals
 // A target "passes" only if confidence >= threshold AND at least minSignals

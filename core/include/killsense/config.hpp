@@ -1,4 +1,4 @@
-// REALM KillSense - versioned plugin configuration (config.json).
+// KopSkoot - versioned plugin configuration (config.json).
 // Stored in the OBS plugin config directory, e.g.
 //   %APPDATA%\obs-studio\plugin_config\realm-killsense\config.json
 // Invalid files never crash OBS: they are backed up and defaults are used.
@@ -44,6 +44,8 @@ struct AppConfig {
 	// updated. Placeholders: {kills} {deaths} {streak} {best} {kd}.
 	std::string counterTextSource;
 	std::string counterFormat = "KILLS {kills}  |  DEATHS {deaths}";
+	// Browser-source overlays: show the big kill / kill-streak pop-up text.
+	bool overlayPopups = true;
 	LogLevel logLevel = LogLevel::Info;
 	bool telemetry = false; // opt-in; no telemetry is implemented or sent
 

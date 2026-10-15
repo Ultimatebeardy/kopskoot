@@ -1,4 +1,4 @@
-// REALM KillSense - minimal logging facade.
+// KopSkoot - minimal logging facade.
 // The core library never depends on OBS. The plugin installs a sink that
 // forwards to blog(); tests and the replay tool use the default stderr sink.
 // SPDX-License-Identifier: GPL-2.0-or-later

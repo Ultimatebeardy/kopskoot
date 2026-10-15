@@ -3,7 +3,7 @@
 ## Milestone 1 — Reliable architecture (this delivery)
 | Requirement | Status |
 |---|---|
-| Loads inside OBS, "REALM KillSense" dock | ✅ (verified in OBS 30.2/Linux) |
+| Loads inside OBS, "KopSkoot" dock | ✅ (verified in OBS 30.2/Linux) |
 | Select an OBS video/game source (inputs and scenes) | ✅ |
 | Safe frame sampling (tick callback, GPU ROI crop, async staging, bounded queue, drop-oldest) | ✅ |
 | Normalized ROIs (profiles + custom ROI override in Settings) | ✅ |

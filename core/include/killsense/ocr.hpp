@@ -1,4 +1,4 @@
-// REALM KillSense - OCR engine abstraction.
+// KopSkoot - OCR engine abstraction.
 // Engines are created and used on the analysis worker thread only.
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once

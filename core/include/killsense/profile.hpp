@@ -1,4 +1,4 @@
-// REALM KillSense - game profile model, parser and registry.
+// KopSkoot - game profile model, parser and registry.
 // Profiles are JSON files stored outside the binary (see docs/PROFILE_SCHEMA.md).
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once

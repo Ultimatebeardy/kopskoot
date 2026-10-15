@@ -1,4 +1,4 @@
-// REALM KillSense - Windows.Media.Ocr backend (C++/WinRT).
+// KopSkoot - Windows.Media.Ocr backend (C++/WinRT).
 // Uses the OCR engine built into Windows 10/11. Everything runs locally; no
 // images leave the machine. Compiled only when KILLSENSE_HAS_WINDOWS_OCR=1.
 // SPDX-License-Identifier: GPL-2.0-or-later

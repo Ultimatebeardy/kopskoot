@@ -1,4 +1,4 @@
-// REALM KillSense - OBS frame sampler (graphics thread side).
+// KopSkoot - OBS frame sampler (graphics thread side).
 //
 // Runs as an OBS tick callback on the graphics thread, like OBS's own
 // ScreenshotObj (frontend/utility/ScreenshotObj.cpp):

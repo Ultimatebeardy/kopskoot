@@ -1,4 +1,4 @@
-// REALM KillSense - common event schema (see docs/EVENT_SCHEMA.md).
+// KopSkoot - common event schema (see docs/EVENT_SCHEMA.md).
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 

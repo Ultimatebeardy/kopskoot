@@ -1,4 +1,4 @@
-// REALM KillSense - Debug View: shows the analysed regions with detector
+// KopSkoot - Debug View: shows the analysed regions with detector
 // overlays, OCR text, confidence contributions and decisions.
 // Debug capture is only enabled while this window is open.
 // SPDX-License-Identifier: GPL-2.0-or-later

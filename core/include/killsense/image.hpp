@@ -1,4 +1,4 @@
-// REALM KillSense - simple owning image type and CPU image operations.
+// KopSkoot - simple owning image type and CPU image operations.
 // Buffers are reused across frames: every function writes into an output
 // image that is only reallocated when its size grows.
 // SPDX-License-Identifier: GPL-2.0-or-later

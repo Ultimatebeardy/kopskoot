@@ -1,4 +1,4 @@
-// REALM KillSense - per-user template capture ("Capture my name plate").
+// KopSkoot - per-user template capture ("Capture my name plate").
 // Cuts the light (white) text out of a captured HUD region so each player can
 // store an image of their OWN name plate. Stored at reference (1080p) scale so
 // it matches the profile's other templates.
