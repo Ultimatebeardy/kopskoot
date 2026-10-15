@@ -7,9 +7,13 @@
 
 #include "killsense/user-template.hpp"
 
+#include <algorithm>
+
 #include <QHBoxLayout>
 #include <QImage>
 #include <QLabel>
+#include <QPainter>
+#include <QPen>
 #include <QPixmap>
 #include <QPushButton>
 #include <QTimer>
@@ -22,7 +26,7 @@ CaptureDialog::CaptureDialog(std::weak_ptr<Controller> controller, QWidget *pare
 	  controller_(std::move(controller))
 {
 	setWindowTitle(T("KillSense.Capture.Title"));
-	resize(460, 260);
+	resize(500, 400);
 	auto *layout = new QVBoxLayout(this);
 	info_ = new QLabel(T("KillSense.Capture.Info"), this);
 	info_->setWordWrap(true);
@@ -32,6 +36,12 @@ CaptureDialog::CaptureDialog(std::weak_ptr<Controller> controller, QWidget *pare
 	preview_->setAlignment(Qt::AlignCenter);
 	preview_->setStyleSheet(QStringLiteral("background:#202028; border:1px solid #444;"));
 	layout->addWidget(preview_, 1);
+	layout->addWidget(new QLabel(T("KillSense.Capture.Region"), this));
+	regionPreview_ = new QLabel(this);
+	regionPreview_->setMinimumHeight(70);
+	regionPreview_->setAlignment(Qt::AlignCenter);
+	regionPreview_->setStyleSheet(QStringLiteral("background:#202028; border:1px solid #444;"));
+	layout->addWidget(regionPreview_);
 	message_ = new QLabel(this);
 	message_->setWordWrap(true);
 	layout->addWidget(message_);
@@ -112,6 +122,21 @@ void CaptureDialog::poll()
 		if (r.regionId != regionId_ || r.rgba.empty())
 			continue;
 		const TemplateCrop crop = cropNameTemplate(r.rgba, r.pxPerReference);
+		// Always show the whole captured area (alpha ignored: some sources
+		// deliver alpha = 0 which would otherwise look black).
+		{
+			QImage region = QImage(r.rgba.data(), r.rgba.width(), r.rgba.height(), r.rgba.stride(),
+					       QImage::Format_RGBX8888)
+						.copy();
+			if (crop.ok) {
+				QPainter painter(&region);
+				painter.setPen(QPen(QColor(255, 210, 0), 2));
+				painter.drawRect(crop.box.x, crop.box.y, crop.box.w - 1, crop.box.h - 1);
+			}
+			regionPreview_->setPixmap(QPixmap::fromImage(region).scaledToHeight(
+				std::min(120, region.height() * 2), Qt::SmoothTransformation));
+			regionPreview_->setToolTip(QStringLiteral("%1 x %2 px").arg(r.rgba.width()).arg(r.rgba.height()));
+		}
 		if (!crop.ok) {
 			if (++attempts_ >= 12) { // ~2 s of frames without a usable name
 				timer_->stop();
@@ -123,7 +148,7 @@ void CaptureDialog::poll()
 		captured_ = crop.image;
 		haveCapture_ = true;
 		QImage view(captured_.data(), captured_.width(), captured_.height(), captured_.stride(),
-			    QImage::Format_RGBA8888);
+			    QImage::Format_RGBX8888);
 		preview_->setPixmap(QPixmap::fromImage(view.copy()).scaledToHeight(
 			std::min(80, captured_.height() * 2), Qt::SmoothTransformation));
 		setMessage(T("KillSense.Capture.Check"), false);

@@ -161,7 +161,7 @@ void DebugViewDialog::refresh()
 			if (r.rgba.empty())
 				continue;
 			QImage view(r.rgba.data(), r.rgba.width(), r.rgba.height(), r.rgba.stride(),
-				    QImage::Format_RGBA8888);
+				    QImage::Format_RGBX8888); // ignore alpha: some sources deliver alpha = 0
 			p.drawImage(0, y, view);
 			boxes.push_back({QRect(0, y, r.rgba.width(), r.rgba.height()), QColor(255, 255, 255, 120),
 					 Q(r.regionId)});

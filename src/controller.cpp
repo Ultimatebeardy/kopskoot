@@ -511,6 +511,7 @@ ControllerSnapshot Controller::snapshot() const
 		s.profileName = activeProfile_ ? activeProfile_->displayName : "(none)";
 		s.detecting = detecting_;
 		s.gamertag = config_.gamertag;
+		s.overlayPopups = config_.overlayPopups;
 		s.setupHint = setupHint_;
 	}
 	s.session = session_.stats();
@@ -586,6 +587,20 @@ bool Controller::saveUserTemplate(const std::string &name, const Image &rgba, st
 	return true;
 }
 
+void Controller::setOverlayPopups(bool enabled)
+{
+	{
+		std::lock_guard<std::recursive_mutex> lock(mutex_);
+		if (config_.overlayPopups == enabled)
+			return;
+		config_.overlayPopups = enabled;
+		saveConfig();
+	}
+	if (websocket_)
+		websocket_->emitCustom("OverlaySettings", enabled ? R"({"popups":true})" : R"({"popups":false})");
+	KS_LOG_INFO("overlay pop-ups %s", enabled ? "on" : "off");
+}
+
 void Controller::refreshCounterSource()
 {
 	// Text sources must be updated on the UI thread; events arrive on the
@@ -639,6 +654,7 @@ std::string Controller::statusJson() const
 	j["sessionDeaths"] = s.session.deaths;
 	j["kdRatio"] = kdRatioText(s.session);
 	j["setupHint"] = s.setupHint;
+	j["overlay"] = {{"popups", s.overlayPopups}};
 	j["analysisFps"] = s.worker.analysisFps;
 	j["avgProcessingMs"] = s.worker.avgProcessingMs;
 	j["droppedFrames"] = s.worker.framesDropped + s.sampler.skippedWorkerBusy;

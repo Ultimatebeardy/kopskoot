@@ -137,6 +137,16 @@ void WebsocketVendorOutput::unregister()
 	vendor_ = nullptr;
 }
 
+void WebsocketVendorOutput::emitCustom(const char *eventType, const std::string &json)
+{
+	std::lock_guard<std::mutex> lock(emitMutex_);
+	if (!vendor_ || shutdown_.load() || !enabled_.load())
+		return;
+	DataPtr data(obs_data_create_from_json(json.c_str()));
+	if (data)
+		obs_websocket_vendor_emit_event(vendor_, eventType, data.get());
+}
+
 void WebsocketVendorOutput::deliver(const KillEvent &ev)
 {
 	std::lock_guard<std::mutex> lock(emitMutex_);
